@@ -1,0 +1,9 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+GET     /ef/volumes/:id             controllers.EfController.getVolume(id)
+GET     /ef/volumes/:id/metadata    controllers.EfController.getVolumeMetadata(id)
+GET     /ef/volumes/:id/pages       controllers.EfController.getVolumePages(id, seq: Option[String] ?= None)
+
+POST     /ef/worksets
