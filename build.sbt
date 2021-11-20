@@ -40,7 +40,8 @@ lazy val buildInfoSettings = Seq(
     "gitSha" -> git.gitHeadCommit.value.getOrElse("N/A"),
     "gitBranch" -> git.gitCurrentBranch.value,
     "gitVersion" -> git.gitDescribedVersion.value.getOrElse("N/A"),
-    "gitDirty" -> git.gitUncommittedChanges.value
+    "gitDirty" -> git.gitUncommittedChanges.value,
+    "nameWithVersion" -> s"${name.value} ${version.value}"
   )
 )
 
@@ -49,7 +50,7 @@ lazy val ammoniteSettings = Seq(
     {
       val version = scalaBinaryVersion.value match {
         case "2.10" => "1.0.3"
-        case _ ⇒  "2.4.0-23-76673f7f"
+        case _ ⇒  "2.4.1"
       }
       "com.lihaoyi" % "ammonite" % version % Test cross CrossVersion.full
     },
@@ -64,9 +65,9 @@ lazy val ammoniteSettings = Seq(
 
 lazy val dockerSettings = Seq(
     Docker / maintainer := "Boris Capitanu <capitanu@illinois.edu>",
-    dockerBaseImage := "docker-registry.htrc.indiana.edu/java8",
+    dockerBaseImage := "eclipse-temurin:8-jre",
     dockerExposedPorts := Seq(9000),
-    dockerRepository := Some("docker-registry.htrc.indiana.edu"),
+    dockerRepository := Some("docker.htrc.illinois.edu"),
     dockerUpdateLatest := true
 )
 

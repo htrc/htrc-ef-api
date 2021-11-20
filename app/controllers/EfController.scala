@@ -2,8 +2,7 @@ package controllers
 
 import javax.inject.Inject
 
-import akka.stream.scaladsl.{Source, StreamConverters}
-import play.api.http.HttpEntity
+import akka.stream.scaladsl.Source
 import play.api.mvc._
 import repo.EfRepository
 
@@ -23,6 +22,16 @@ class EfController @Inject()(efRepository: EfRepository,
       }
     }
 
+  def getVolumeNoPos(id: String): Action[AnyContent] =
+    Action.async { implicit req =>
+      render.async {
+        case Accepts.Json() =>
+          val ids = Set(id)
+          efRepository.getVolumesNoPos(ids)
+            .map(publisher => Ok.chunked(Source.fromPublisher(publisher)))
+      }
+    }
+
   def getVolumeMetadata(id: String): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
@@ -37,8 +46,18 @@ class EfController @Inject()(efRepository: EfRepository,
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
-          val seqs = seq.map(_.split(',').toList)
+          val seqs = seq.map(_.split(',').toSet)
           efRepository.getVolumePages(id, seqs)
+            .map(Ok(_))
+      }
+    }
+
+  def getVolumePagesNoPos(id: String, seq: Option[String]): Action[AnyContent] =
+    Action.async { implicit req =>
+      render.async {
+        case Accepts.Json() =>
+          val seqs = seq.map(_.split(',').toSet)
+          efRepository.getVolumePagesNoPos(id, seqs)
             .map(Ok(_))
       }
     }

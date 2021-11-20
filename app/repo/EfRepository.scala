@@ -12,10 +12,11 @@ trait EfRepository {
   type FieldSet = Set[String]
   type PageSet = Set[String]
 
-  def getVolumes(ids: IdSet, fields: FieldSet): Future[Publisher[JsObject]]
+  def getVolumes(ids: IdSet): Future[Publisher[JsObject]]
+  def getVolumesNoPos(ids: IdSet): Future[Publisher[JsObject]]
   def getVolumesMetadata(ids: IdSet): Future[Publisher[JsObject]]
   def getVolumePages(id: String, pageSeqs: Option[PageSet] = None): Future[JsObject]
-  def getPagesTokenCounts(id: String, pageSeqs: Option[PageSet] = None): Future[JsObject]
+  def getVolumePagesNoPos(id: String, pageSeqs: Option[PageSet] = None): Future[JsObject]
 
   def createWorkset(ids: IdSet): Future[JsObject]
 }

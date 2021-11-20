@@ -35,8 +35,79 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   protected def pagesCol: Future[BSONCollection] =
     reactiveMongoApi.database.map(_.collection[BSONCollection]("pages"))
 
-
-  override def getVolumes(ids: IdSet, fields: FieldSet): Future[Publisher[JsObject]] = {
+  //  db.getCollection("ef").aggregate([
+  //    {
+  //      $match: {
+  //      htid: { $in: ['hvd.32044019369404'] }
+  //    }
+  //    },
+  //    {
+  //      $lookup: {
+  //      from: 'metadata',
+  //      let: { htid: '$htid' },
+  //      pipeline: [
+  //    {
+  //      $match: {
+  //      $expr: {
+  //      $eq: [ '$htid', '$$htid' ]
+  //    }
+  //    }
+  //    },
+  //    { $project: { _id: 0 } },
+  //    { $replaceRoot: { newRoot: '$metadata' } }
+  //      ],
+  //      as: 'metadata'
+  //    }
+  //    },
+  //    {
+  //      $unwind: '$metadata'
+  //    },
+  //    {
+  //      $lookup: {
+  //      from: 'features',
+  //      let: { htid: '$htid' },
+  //      pipeline: [
+  //    {
+  //      $match: {
+  //      $expr: {
+  //      $eq: [ '$htid', '$$htid' ]
+  //    }
+  //    }
+  //    },
+  //    { $project: { _id: 0 } },
+  //    { $replaceRoot: { newRoot: '$features' } }
+  //      ],
+  //      as: 'features'
+  //    }
+  //    },
+  //    {
+  //      $unwind: '$features'
+  //    },
+  //    {
+  //      $lookup: {
+  //      from: 'pages',
+  //      let: { htid: '$htid' },
+  //      pipeline: [
+  //    {
+  //      $match: {
+  //      $expr: {
+  //      $eq: [ '$htid', '$$htid' ]
+  //    }
+  //    }
+  //    },
+  //    { $project: { _id: 0 } },
+  //    { $replaceRoot: { newRoot: '$page' } }
+  //      ],
+  //      as: 'features.pages'
+  //    }
+  //    },
+  //    {
+  //      $project: {
+  //      _id: 0
+  //    }
+  //    }
+  //  ])
+  override def getVolumes(ids: IdSet): Future[Publisher[JsObject]] = {
     for  { col <- efCol; features <- featuresCol; metadata <- metadataCol; pages <- pagesCol } yield {
       col
         .aggregateWith[JsObject]() { framework =>
@@ -83,6 +154,188 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
     }
   }
 
+  //db.getCollection("ef").aggregate([
+  //    {
+  //        $match: {
+  //            htid: { $in: ['hvd.32044019369404'] }
+  //        }
+  //    },
+  //    {
+  //        $lookup: {
+  //            from: 'metadata',
+  //            let: { htid: '$htid' },
+  //            pipeline: [
+  //                {
+  //                    $match: {
+  //                        $expr: {
+  //                            $eq: ['$htid', '$$htid']
+  //                        }
+  //                    }
+  //                },
+  //                { $project: { _id: 0 } },
+  //                { $replaceRoot: { newRoot: '$metadata' } }
+  //            ],
+  //            as: 'metadata'
+  //        }
+  //    },
+  //    {
+  //        $unwind: '$metadata'
+  //    },
+  //    {
+  //        $lookup: {
+  //            from: 'features',
+  //            let: { htid: '$htid' },
+  //            pipeline: [
+  //                {
+  //                    $match: {
+  //                        $expr: {
+  //                            $eq: ['$htid', '$$htid']
+  //                        }
+  //                    }
+  //                },
+  //                { $project: { _id: 0 } },
+  //                { $replaceRoot: { newRoot: '$features' } }
+  //            ],
+  //            as: 'features'
+  //        }
+  //    },
+  //    {
+  //        $unwind: '$features'
+  //    },
+  //    {
+  //        $lookup: {
+  //            from: 'pages',
+  //            let: { htid: '$htid' },
+  //            pipeline: [
+  //                {
+  //                    $match: {
+  //                        $expr: {
+  //                            $eq: ['$htid', '$$htid']
+  //                        }
+  //                    }
+  //                },
+  //                { $project: { _id: 0 } },
+  //                {
+  //                    $addFields: {
+  //                        "page.body.tokenPosCount": {
+  //                            $map: {
+  //                                input: { $objectToArray: "$page.body.tokenPosCount" },
+  //                                as: "tpc",
+  //                                in: {
+  //                                    k: "$$tpc.k",
+  //                                    v: {
+  //                                        $objectToArray: "$$tpc.v"
+  //                                    }
+  //                                }
+  //                            }
+  //                        }
+  //                    }
+  //                },
+  //                {
+  //                    $addFields: {
+  //                        "page.body.tokensCount": {
+  //                            $arrayToObject: {
+  //                                $map: {
+  //                                    input: "$page.body.tokenPosCount",
+  //                                    as: "tpc",
+  //                                    in: {
+  //                                        k: "$$tpc.k",
+  //                                        v: {
+  //                                            $sum: "$$tpc.v.v"
+  //                                        }
+  //                                    }
+  //                                }
+  //                            }
+  //                        }
+  //                    }
+  //                },
+  //                {
+  //                    $project: {
+  //                        "page.body.tokenPosCount": 0
+  //                    }
+  //                },
+  //
+  //                { $replaceRoot: { newRoot: '$page' } }
+  //            ],
+  //            as: 'features.pages'
+  //        }
+  //    },
+  //    {
+  //        $project: {
+  //            _id: 0
+  //        }
+  //    }
+  //])
+  override def getVolumesNoPos(ids: IdSet): Future[Publisher[JsObject]] = {
+    for {col <- efCol; features <- featuresCol; metadata <- metadataCol; pages <- pagesCol} yield {
+      col
+        .aggregateWith[JsObject]() { framework =>
+          import framework._
+
+          List(
+            Match(document("htid" -> document("$in" -> ids))),
+            LookupPipeline(
+              from = metadata.name,
+              let = document("htid" -> "$htid"),
+              pipeline = List(
+                Match(document("$expr" -> document("$eq" -> List("$htid", """$$htid""")))),
+                Project(document("_id" -> 0)),
+                ReplaceRootField("metadata")
+              ),
+              as = "metadata"
+            ),
+            UnwindField("metadata"),
+            LookupPipeline(
+              from = features.name,
+              let = document("htid" -> "$htid"),
+              pipeline = List(
+                Match(document("$expr" -> document("$eq" -> List("$htid", """$$htid""")))),
+                Project(document("_id" -> 0)),
+                ReplaceRootField("features")
+              ),
+              as = "features"
+            ),
+            UnwindField("features"),
+            LookupPipeline(
+              from = pages.name,
+              let = document("htid" -> "$htid"),
+              pipeline = List(
+                Match(document("$expr" -> document("$eq" -> List("$htid", """$$htid""")))),
+                Project(document("_id" -> 0)),
+                AddFields(document("page.body.tokenPosCount" -> document(
+                  "$map" -> document(
+                    "input" -> document("$objectToArray" -> "$page.body.tokenPosCount"),
+                    "as" -> "tpc",
+                    "in" -> document(
+                      "k" -> "$$tpc.k",
+                      "v" -> document("$objectToArray" -> "$$tpc.v")
+                    )
+                  )
+                ))),
+                AddFields(document("page.body.tokensCount" -> document(
+                  "$arrayToObject" -> document(
+                    "$map" -> document(
+                      "input" -> "$page.body.tokenPosCount",
+                      "as" -> "tpc",
+                      "in" -> document(
+                        "k" -> "$$tpc.k",
+                        "v" -> document("$sum" -> "$$tpc.v.v")
+                      )
+                    )
+                  )
+                ))),
+                Project(document("page.body.tokenPosCount" -> 0)),
+                ReplaceRootField("page")
+              ),
+              as = "features.pages"
+            ),
+            Project(document("_id" -> 0))
+          )
+        }
+        .documentPublisher()
+    }
+  }
+
   override def getVolumesMetadata(ids: IdSet): Future[Publisher[JsObject]] = {
     val query = document("htid" -> document("$in" -> ids))
     val projection = document("_id" -> 0)
@@ -115,8 +368,103 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
     }
   }
 
-  override def getPagesTokenCounts(id: String, pageSeqs: Option[PageSet]): Future[JsObject] = {
-    ???
+  //db.getCollection("pages").aggregate([
+  //    {
+  //        $match: {
+  //            htid: 'hvd.32044019369404',
+  //            "page.seq": { $in: [ '00000119'] }
+  //        }
+  //    },
+  //    {
+  //        $addFields: {
+  //            "page.body.tokenPosCount": {
+  //                $map: {
+  //                    input: { $objectToArray: "$page.body.tokenPosCount" },
+  //                    as: "tpc",
+  //                    in: {
+  //                        k: "$$tpc.k",
+  //                        v: {
+  //                            $objectToArray: "$$tpc.v"
+  //                        }
+  //                    }
+  //                }
+  //            }
+  //        }
+  //    },
+  //    {
+  //        $addFields: {
+  //            "page.body.tokensCount": {
+  //                $arrayToObject: {
+  //                    $map: {
+  //                        input: "$page.body.tokenPosCount",
+  //                        as: "tpc",
+  //                        in: {
+  //                            k: "$$tpc.k",
+  //                            v: {
+  //                                $sum: "$$tpc.v.v"
+  //                            }
+  //                        }
+  //                    }
+  //                }
+  //            }
+  //        }
+  //    },
+  //    {
+  //        $project: {
+  //            "page.body.tokenPosCount": 0
+  //        }
+  //    },
+  //    {
+  //        $group: {
+  //            _id: "$htid",
+  //            htid: { $first: "$htid" },
+  //            pages: { $push: "$page" }
+  //        }
+  //    }
+  //])
+  override def getVolumePagesNoPos(id: String, pageSeqs: Option[PageSet]): Future[JsObject] = {
+    pagesCol.flatMap { col =>
+      var query = document("htid" -> id)
+      pageSeqs.foreach(seqs => query ++= "page.seq" -> document("$in" -> seqs))
+
+      col
+        .aggregateWith[JsObject]() { framework =>
+          import framework._
+
+          List(
+            Match(query),
+            AddFields(document("page.body.tokenPosCount" -> document(
+              "$map" -> document(
+                "input" -> document("$objectToArray" -> "$page.body.tokenPosCount"),
+                "as" -> "tpc",
+                "in" -> document(
+                  "k" -> "$$tpc.k",
+                  "v" -> document("$objectToArray" -> "$$tpc.v")
+                )
+              )
+            ))),
+            AddFields(document("page.body.tokensCount" -> document(
+              "$arrayToObject" -> document(
+                "$map" -> document(
+                  "input" -> "$page.body.tokenPosCount",
+                  "as" -> "tpc",
+                  "in" -> document(
+                    "k" -> "$$tpc.k",
+                    "v" -> document("$sum" -> "$$tpc.v.v")
+                  )
+                )
+              )
+            ))),
+            Project(document("page.body.tokenPosCount" -> 0)),
+            GroupField("htid")(
+              "htid" -> FirstField("htid"),
+              "pages" -> PushField("page")
+            ),
+            Project(document("_id" -> 0))
+          )
+        }
+        .head
+    }
   }
 
   override def createWorkset(ids: IdSet): Future[JsObject] = {
