@@ -64,11 +64,17 @@ lazy val ammoniteSettings = Seq(
 )
 
 lazy val dockerSettings = Seq(
-    Docker / maintainer := "Boris Capitanu <capitanu@illinois.edu>",
-    dockerBaseImage := "eclipse-temurin:8-jre",
-    dockerExposedPorts := Seq(9000),
-    dockerRepository := Some("docker.htrc.illinois.edu"),
-    dockerUpdateLatest := true
+  Docker / maintainer := "Boris Capitanu <capitanu@illinois.edu>",
+  dockerBaseImage := "eclipse-temurin:8-jre",
+  dockerExposedPorts := Seq(9000),
+  dockerRepository := Some("docker.htrc.illinois.edu"),
+  dockerUpdateLatest := true,
+  Universal / javaOptions ++= Seq(
+    // don't write any pid files
+    "-Dpidfile.path=/dev/null",
+    // reference a logback config file that has no file appenders
+    "-Dlogback.configurationFile=conf/logback-prod.xml"
+  )
 )
 
 lazy val `ef-api` = (project in file("."))
