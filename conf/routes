@@ -2,9 +2,11 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-GET     /volumes/:id             controllers.EfController.getVolume(id)
-GET     /volumes/:id/metadata    controllers.EfController.getVolumeMetadata(id)
-GET     /volumes/:id/pages       controllers.EfController.getVolumePages(id, seq: Option[String] ?= None)
+GET     /swagger.json               controllers.Assets.at(path="/public", file="swagger.json")
 
-GET     /volumes-no-pos/:id       controllers.EfController.getVolumeNoPos(id)
-GET     /volumes-no-pos/:id/pages controllers.EfController.getVolumePagesNoPos(id, seq: Option[String] ?= None)
+GET     /volumes/:id                controllers.EfController.getVolume(id)
+GET     /volumes/:id/metadata       controllers.EfController.getVolumeMetadata(id)
+GET     /volumes/:id/pages          controllers.EfController.getVolumePages(id, seq: Option[String] ?= None)
+
+GET     /volumes-no-pos/:id         controllers.EfController.getVolumeNoPos(id)
+GET     /volumes-no-pos/:id/pages   controllers.EfController.getVolumePagesNoPos(id, seq: Option[String] ?= None)
