@@ -1,7 +1,6 @@
 package repo
 
 import akka.stream.Materializer
-import org.reactivestreams.Publisher
 import play.api.Logging
 import play.api.libs.json._
 import reactivemongo.api.bson.document
@@ -107,9 +106,10 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //    }
   //    }
   //  ])
-  override def getVolumes(ids: IdSet): Future[Publisher[JsObject]] = {
-    for  { col <- efCol; features <- featuresCol; metadata <- metadataCol; pages <- pagesCol } yield {
-      col
+  override def getVolumes(ids: IdSet): Future[List[JsObject]] = {
+    for {
+      col <- efCol; features <- featuresCol; metadata <- metadataCol; pages <- pagesCol
+      volumes <- col
         .aggregateWith[JsObject]() { framework =>
           import framework._
 
@@ -150,8 +150,8 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
             Project(document("_id" -> 0))
           )
         }
-        .documentPublisher()
-    }
+        .collect[List]()
+    } yield volumes
   }
 
   //db.getCollection("ef").aggregate([
@@ -266,9 +266,10 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //        }
   //    }
   //])
-  override def getVolumesNoPos(ids: IdSet): Future[Publisher[JsObject]] = {
-    for {col <- efCol; features <- featuresCol; metadata <- metadataCol; pages <- pagesCol} yield {
-      col
+  override def getVolumesNoPos(ids: IdSet): Future[List[JsObject]] = {
+    for {
+      col <- efCol; features <- featuresCol; metadata <- metadataCol; pages <- pagesCol
+      volumes <- col
         .aggregateWith[JsObject]() { framework =>
           import framework._
 
@@ -332,18 +333,18 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
             Project(document("_id" -> 0))
           )
         }
-        .documentPublisher()
-    }
+        .collect[List]()
+    } yield volumes
   }
 
-  override def getVolumesMetadata(ids: IdSet): Future[Publisher[JsObject]] = {
+  override def getVolumesMetadata(ids: IdSet): Future[List[JsObject]] = {
     val query = document("htid" -> document("$in" -> ids))
     val projection = document("_id" -> 0)
 
     metadataCol
       .map(_.find(query, Some(projection)))
       .map(_.cursor[JsObject]())
-      .map(_.documentPublisher())
+      .flatMap(_.collect[List]())
   }
 
   override def getVolumePages(id: String, pageSeqs: Option[PageSet] = None): Future[JsObject] = {
