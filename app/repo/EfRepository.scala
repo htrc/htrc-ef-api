@@ -1,7 +1,6 @@
 package repo
 
 import com.google.inject.ImplementedBy
-import org.reactivestreams.Publisher
 import play.api.libs.json.JsObject
 
 import scala.concurrent.Future
@@ -12,9 +11,9 @@ trait EfRepository {
   type FieldSet = Set[String]
   type PageSet = Set[String]
 
-  def getVolumes(ids: IdSet): Future[Publisher[JsObject]]
-  def getVolumesNoPos(ids: IdSet): Future[Publisher[JsObject]]
-  def getVolumesMetadata(ids: IdSet): Future[Publisher[JsObject]]
+  def getVolumes(ids: IdSet): Future[List[JsObject]]
+  def getVolumesNoPos(ids: IdSet): Future[List[JsObject]]
+  def getVolumesMetadata(ids: IdSet): Future[List[JsObject]]
   def getVolumePages(id: String, pageSeqs: Option[PageSet] = None): Future[JsObject]
   def getVolumePagesNoPos(id: String, pageSeqs: Option[PageSet] = None): Future[JsObject]
 

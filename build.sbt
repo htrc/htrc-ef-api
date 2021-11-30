@@ -77,12 +77,25 @@ lazy val dockerSettings = Seq(
   )
 )
 
+lazy val swaggerSettings = Seq(
+  swaggerPlayConfiguration := Some(Map(
+    "api.version" -> version.value,
+    "swagger.api.basepath" -> "/ef-api",
+    "swagger.api.info.contact" -> "capitanu@illinois.edu",
+    "swagger.api.info.title" -> "EF API",
+    "swagger.api.info.description" -> "This is the Extracted Features Web API",
+    "swagger.api.info.license" -> "Apache License 2.0",
+    "swagger.api.info.licenseUrl" -> "https://www.apache.org/licenses/LICENSE-2.0"
+  ))
+)
+
 lazy val `ef-api` = (project in file("."))
   .enablePlugins(PlayScala, BuildInfoPlugin, GitVersioning, GitBranchPrompt, JavaAppPackaging, DockerPlugin)
   .settings(commonSettings)
   .settings(buildInfoSettings)
   .settings(ammoniteSettings)
   .settings(dockerSettings)
+  .settings(swaggerSettings)
   .settings(
     name := "HTRC-ExtractedFeatures-API",
     libraryDependencies ++= Seq(
@@ -91,6 +104,7 @@ lazy val `ef-api` = (project in file("."))
       "com.typesafe.play"             %% "play-streams"                     % "2.8.8",
       "org.reactivemongo"             %% "play2-reactivemongo"              % "1.0.7-play28",
       "org.reactivemongo"             %% "reactivemongo-akkastream"         % "1.0.7",
+      "io.swagger"                    %  "swagger-annotations"              % "1.6.1",
       "org.scalatestplus.play"        %% "scalatestplus-play"               % "5.1.0"   % Test
     ),
     routesGenerator := InjectedRoutesGenerator
