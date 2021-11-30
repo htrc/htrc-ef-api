@@ -1,8 +1,8 @@
 package controllers
 
 import javax.inject.Inject
-
 import akka.stream.scaladsl.Source
+import io.swagger.annotations.ApiParam
 import play.api.mvc._
 import repo.EfRepository
 
@@ -12,7 +12,7 @@ class EfController @Inject()(efRepository: EfRepository,
                              components: ControllerComponents)
                             (implicit val ec: ExecutionContext) extends AbstractController(components) {
 
-  def getVolume(id: String): Action[AnyContent] =
+  def getVolume(@ApiParam(value = "HTID of the volume to fetch", required = true) id: String): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
@@ -22,7 +22,7 @@ class EfController @Inject()(efRepository: EfRepository,
       }
     }
 
-  def getVolumeNoPos(id: String): Action[AnyContent] =
+  def getVolumeNoPos(@ApiParam(value = "HTID of the volume to fetch", required = true)  id: String): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
@@ -32,7 +32,7 @@ class EfController @Inject()(efRepository: EfRepository,
       }
     }
 
-  def getVolumeMetadata(id: String): Action[AnyContent] =
+  def getVolumeMetadata(@ApiParam(value = "HTID of the volume to fetch", required = true) id: String): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
@@ -42,7 +42,8 @@ class EfController @Inject()(efRepository: EfRepository,
       }
     }
 
-  def getVolumePages(id: String, seq: Option[String]): Action[AnyContent] =
+  def getVolumePages(@ApiParam(value = "HTID of the volume to fetch", required = true) id: String,
+                     @ApiParam(value = "Comma-separated list of page sequence numbers to fetch") seq: Option[String]): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
@@ -52,7 +53,8 @@ class EfController @Inject()(efRepository: EfRepository,
       }
     }
 
-  def getVolumePagesNoPos(id: String, seq: Option[String]): Action[AnyContent] =
+  def getVolumePagesNoPos(@ApiParam(value = "HTID of the volume to fetch", required = true) id: String,
+                          @ApiParam(value = "Comma-separated list of page sequence numbers to fetch") seq: Option[String]): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
