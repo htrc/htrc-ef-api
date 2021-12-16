@@ -1,6 +1,7 @@
 package repo
 
 import akka.stream.Materializer
+import exceptions.WorksetNotFoundException
 import play.api.Logging
 import play.api.libs.json._
 import reactivemongo.api.ReadPreference
@@ -502,8 +503,11 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
     worksetsCol
       .flatMap(_
         .find(query, Some(projection))
-        .requireOne[JsObject](ReadPreference.primaryPreferred)
-        .map(r => (r \ "htids").as[IdSet])
+        .one[JsObject]
+        .map {
+          case Some(json) => (json \ "htids").as[IdSet]
+          case None => throw WorksetNotFoundException(id)
+        }
       )
   }
 }

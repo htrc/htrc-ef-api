@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiParam
 import play.api.mvc._
 import repo.EfRepository
 import play.api.libs.json._
+import utils.IdUtils._
 
 import scala.concurrent.ExecutionContext
 
@@ -17,7 +18,7 @@ class EfController @Inject()(efRepository: EfRepository,
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
-          val ids = Set(id)
+          val ids = Set(uncleanId(id))
           efRepository.getVolumes(ids)
             .map(volumes => Ok(Json.toJson(volumes.headOption)))
       }
@@ -27,7 +28,7 @@ class EfController @Inject()(efRepository: EfRepository,
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
-          val ids = Set(id)
+          val ids = Set(uncleanId(id))
           efRepository.getVolumesNoPos(ids)
             .map(volumes => Ok(Json.toJson(volumes.headOption)))
       }
@@ -37,7 +38,7 @@ class EfController @Inject()(efRepository: EfRepository,
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
-          val ids = Set(id)
+          val ids = Set(uncleanId(id))
           efRepository.getVolumesMetadata(ids)
             .map(metadata => Ok(Json.toJson(metadata.headOption)))
       }
@@ -49,7 +50,7 @@ class EfController @Inject()(efRepository: EfRepository,
       render.async {
         case Accepts.Json() =>
           val seqs = seq.map(_.split(',').toSet)
-          efRepository.getVolumePages(id, seqs)
+          efRepository.getVolumePages(uncleanId(id), seqs)
             .map(Ok(_))
       }
     }
@@ -60,7 +61,7 @@ class EfController @Inject()(efRepository: EfRepository,
       render.async {
         case Accepts.Json() =>
           val seqs = seq.map(_.split(',').toSet)
-          efRepository.getVolumePagesNoPos(id, seqs)
+          efRepository.getVolumePagesNoPos(uncleanId(id), seqs)
             .map(Ok(_))
       }
     }
