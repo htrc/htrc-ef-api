@@ -11,8 +11,9 @@ import scala.concurrent.ExecutionContext
 class EfController @Inject()(efRepository: EfRepository,
                              components: ControllerComponents)
                             (implicit val ec: ExecutionContext) extends AbstractController(components) {
+  import efRepository.{VolumeId, WorksetId}
 
-  def getVolume(@ApiParam(value = "HTID of the volume to fetch", required = true) id: String): Action[AnyContent] =
+  def getVolume(@ApiParam(value = "HTID of the volume to fetch", required = true) id: VolumeId): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
@@ -22,7 +23,7 @@ class EfController @Inject()(efRepository: EfRepository,
       }
     }
 
-  def getVolumeNoPos(@ApiParam(value = "HTID of the volume to fetch", required = true)  id: String): Action[AnyContent] =
+  def getVolumeNoPos(@ApiParam(value = "HTID of the volume to fetch", required = true)  id: VolumeId): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
@@ -32,7 +33,7 @@ class EfController @Inject()(efRepository: EfRepository,
       }
     }
 
-  def getVolumeMetadata(@ApiParam(value = "HTID of the volume to fetch", required = true) id: String): Action[AnyContent] =
+  def getVolumeMetadata(@ApiParam(value = "HTID of the volume to fetch", required = true) id: VolumeId): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
@@ -42,7 +43,7 @@ class EfController @Inject()(efRepository: EfRepository,
       }
     }
 
-  def getVolumePages(@ApiParam(value = "HTID of the volume to fetch", required = true) id: String,
+  def getVolumePages(@ApiParam(value = "HTID of the volume to fetch", required = true) id: VolumeId,
                      @ApiParam(value = "Comma-separated list of page sequence numbers to fetch") seq: Option[String]): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
@@ -53,7 +54,7 @@ class EfController @Inject()(efRepository: EfRepository,
       }
     }
 
-  def getVolumePagesNoPos(@ApiParam(value = "HTID of the volume to fetch", required = true) id: String,
+  def getVolumePagesNoPos(@ApiParam(value = "HTID of the volume to fetch", required = true) id: VolumeId,
                           @ApiParam(value = "Comma-separated list of page sequence numbers to fetch") seq: Option[String]): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
@@ -64,18 +65,53 @@ class EfController @Inject()(efRepository: EfRepository,
       }
     }
 
-//  def getMultiMetadata: Action[String] =
-//    Action.async(parse.text) { implicit req =>
-//      render.async {
-//        case Accepts.Json() =>
-//          if (req.body == null || req.body.isEmpty)
-//            Future.successful(BadRequest)
-//          else {
-//            val ids = req.body.split("""[\|\n]""").toSet
-//            efRepository.getMetadata(ids).map(publisher =>
-//              Ok.chunked(Source.fromPublisher(publisher))
-//            )
-//          }
-//      }
-//    }
+  def createWorkset(): Action[String] =
+    Action.async(parse.text) { implicit req =>
+      render.async {
+        case Accepts.Json() =>
+          val ids = req.body.linesIterator.toSet
+          efRepository.createWorkset(ids).map(wid => Created(Json.obj("id" -> wid)))
+      }
+    }
+
+  def deleteWorkset(wid: WorksetId): Action[AnyContent] =
+    Action.async { implicit req =>
+      render.async {
+        case Accepts.Json() =>
+          efRepository.deleteWorkset(wid).map(_ => NoContent)
+      }
+    }
+
+  def getWorksetVolumes(wid: WorksetId): Action[AnyContent] =
+    Action.async { implicit req =>
+      render.async {
+        case Accepts.Json() =>
+          efRepository
+            .getWorksetVolumes(wid)
+            .flatMap(efRepository.getVolumes)
+            .map(volumes => Ok(Json.toJson(volumes)))
+      }
+    }
+
+  def getWorksetVolumesNoPos(wid: WorksetId): Action[AnyContent] =
+    Action.async { implicit req =>
+      render.async {
+        case Accepts.Json() =>
+          efRepository
+            .getWorksetVolumes(wid)
+            .flatMap(efRepository.getVolumesNoPos)
+            .map(volumes => Ok(Json.toJson(volumes)))
+      }
+    }
+
+  def getWorksetVolumesMetadata(wid: WorksetId): Action[AnyContent] =
+    Action.async { implicit req =>
+      render.async {
+        case Accepts.Json() =>
+          efRepository
+            .getWorksetVolumes(wid)
+            .flatMap(efRepository.getVolumesMetadata)
+            .map(metadata => Ok(Json.toJson(metadata)))
+      }
+    }
 }

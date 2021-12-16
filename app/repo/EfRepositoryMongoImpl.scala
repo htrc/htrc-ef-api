@@ -3,8 +3,10 @@ package repo
 import akka.stream.Materializer
 import play.api.Logging
 import play.api.libs.json._
-import reactivemongo.api.bson.document
+import reactivemongo.api.ReadPreference
+import reactivemongo.api.bson.{BSONObjectID, document}
 
+import java.time.Instant
 import javax.inject.{Inject, Singleton}
 
 // Reactive Mongo imports
@@ -33,6 +35,8 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
     reactiveMongoApi.database.map(_.collection[BSONCollection]("metadata"))
   protected def pagesCol: Future[BSONCollection] =
     reactiveMongoApi.database.map(_.collection[BSONCollection]("pages"))
+  protected def worksetsCol: Future[BSONCollection] =
+    reactiveMongoApi.database.map(_.collection[BSONCollection]("worksets"))
 
   //  db.getCollection("ef").aggregate([
   //    {
@@ -347,7 +351,7 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
       .flatMap(_.collect[List]())
   }
 
-  override def getVolumePages(id: String, pageSeqs: Option[PageSet] = None): Future[JsObject] = {
+  override def getVolumePages(id: VolumeId, pageSeqs: Option[PageSet] = None): Future[JsObject] = {
     pagesCol.flatMap { col =>
       var query = document("htid" -> id)
       pageSeqs.foreach(seqs => query ++= "page.seq" -> document("$in" -> seqs))
@@ -423,7 +427,7 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //        }
   //    }
   //])
-  override def getVolumePagesNoPos(id: String, pageSeqs: Option[PageSet]): Future[JsObject] = {
+  override def getVolumePagesNoPos(id: VolumeId, pageSeqs: Option[PageSet]): Future[JsObject] = {
     pagesCol.flatMap { col =>
       var query = document("htid" -> id)
       pageSeqs.foreach(seqs => query ++= "page.seq" -> document("$in" -> seqs))
@@ -468,7 +472,38 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
     }
   }
 
-  override def createWorkset(ids: IdSet): Future[JsObject] = {
-    ???
+  override def createWorkset(ids: IdSet): Future[WorksetId] = {
+    val worksetId = BSONObjectID.generate()
+
+    worksetsCol
+      .flatMap(_
+        .insert(ordered = false)
+        .one(document(
+          "_id" -> worksetId,
+          "htids" -> ids,
+          "created" -> Instant.now
+        ))
+      )
+      .map(_ => worksetId.stringify)
+  }
+
+  override def deleteWorkset(id: WorksetId): Future[Unit] = {
+    val worksetId = BSONObjectID.parse(id).get
+
+    worksetsCol
+      .flatMap(_.delete().one(document("_id" -> worksetId)))
+      .map(_ => ())
+  }
+
+  override def getWorksetVolumes(id: WorksetId): Future[IdSet] = {
+    val query = document("_id" -> BSONObjectID.parse(id).get)
+    val projection = document("_id" -> 0, "htids" -> 1)
+
+    worksetsCol
+      .flatMap(_
+        .find(query, Some(projection))
+        .requireOne[JsObject](ReadPreference.primaryPreferred)
+        .map(r => (r \ "htids").as[IdSet])
+      )
   }
 }
