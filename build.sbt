@@ -6,7 +6,7 @@ lazy val commonSettings = Seq(
   organization := "org.hathitrust.htrc",
   organizationName := "HathiTrust Research Center",
   organizationHomepage := Some(url("https://www.hathitrust.org/htrc")),
-  scalaVersion := "2.13.6",
+  scalaVersion := "2.13.7",
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
@@ -50,7 +50,7 @@ lazy val ammoniteSettings = Seq(
     {
       val version = scalaBinaryVersion.value match {
         case "2.10" => "1.0.3"
-        case _ ⇒  "2.4.1"
+        case _ ⇒  "2.5.0"
       }
       "com.lihaoyi" % "ammonite" % version % Test cross CrossVersion.full
     },
@@ -101,10 +101,10 @@ lazy val `ef-api` = (project in file("."))
     libraryDependencies ++= Seq(
       guice,
       filters,
-      "com.typesafe.play"             %% "play-streams"                     % "2.8.8",
-      "org.reactivemongo"             %% "play2-reactivemongo"              % "1.0.7-play28",
-      "org.reactivemongo"             %% "reactivemongo-akkastream"         % "1.0.7",
-      "io.swagger"                    %  "swagger-annotations"              % "1.6.1",
+      "com.typesafe.play"             %% "play-streams"                     % "2.8.11",
+      "org.reactivemongo"             %% "play2-reactivemongo"              % "1.0.8-play28",
+      "org.reactivemongo"             %% "reactivemongo-akkastream"         % "1.0.8",
+      "io.swagger"                    %  "swagger-annotations"              % "1.6.3",
       "org.scalatestplus.play"        %% "scalatestplus-play"               % "5.1.0"   % Test
     ),
     routesGenerator := InjectedRoutesGenerator
