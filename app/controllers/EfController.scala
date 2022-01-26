@@ -14,23 +14,14 @@ class EfController @Inject()(efRepository: EfRepository,
                             (implicit val ec: ExecutionContext) extends AbstractController(components) {
   import efRepository.{VolumeId, WorksetId}
 
-  def getVolume(@ApiParam(value = "HTID of the volume to fetch", required = true) id: VolumeId): Action[AnyContent] =
+  def getVolume(@ApiParam(value = "HTID of the volume to fetch", required = true) id: VolumeId,
+                @ApiParam(value = "'true' whether to include part-of-speech information for tokens, 'false' otherwise", required = false, defaultValue = "true") pos: Boolean): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
           val ids = Set(uncleanId(id))
-          efRepository.getVolumes(ids)
-            .map(volumes => Ok(Json.toJson(volumes.headOption)))
-      }
-    }
-
-  def getVolumeNoPos(@ApiParam(value = "HTID of the volume to fetch", required = true)  id: VolumeId): Action[AnyContent] =
-    Action.async { implicit req =>
-      render.async {
-        case Accepts.Json() =>
-          val ids = Set(uncleanId(id))
-          efRepository.getVolumesNoPos(ids)
-            .map(volumes => Ok(Json.toJson(volumes.headOption)))
+          val volumes = if (pos) efRepository.getVolumes(ids) else efRepository.getVolumesNoPos(ids)
+          volumes.map(volumes => Ok(Json.toJson(volumes.headOption)))
       }
     }
 
@@ -45,24 +36,14 @@ class EfController @Inject()(efRepository: EfRepository,
     }
 
   def getVolumePages(@ApiParam(value = "HTID of the volume to fetch", required = true) id: VolumeId,
-                     @ApiParam(value = "Comma-separated list of page sequence numbers to fetch") seq: Option[String]): Action[AnyContent] =
+                     @ApiParam(value = "Comma-separated list of page sequence numbers to fetch") seq: Option[String],
+                     @ApiParam(value = "'true' whether to include part-of-speech information for tokens, 'false' otherwise", required = false, defaultValue = "true") pos: Boolean): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
           val seqs = seq.map(_.split(',').toSet)
-          efRepository.getVolumePages(uncleanId(id), seqs)
-            .map(Ok(_))
-      }
-    }
-
-  def getVolumePagesNoPos(@ApiParam(value = "HTID of the volume to fetch", required = true) id: VolumeId,
-                          @ApiParam(value = "Comma-separated list of page sequence numbers to fetch") seq: Option[String]): Action[AnyContent] =
-    Action.async { implicit req =>
-      render.async {
-        case Accepts.Json() =>
-          val seqs = seq.map(_.split(',').toSet)
-          efRepository.getVolumePagesNoPos(uncleanId(id), seqs)
-            .map(Ok(_))
+          val pages = if (pos) efRepository.getVolumePages(uncleanId(id), seqs) else efRepository.getVolumePagesNoPos(uncleanId(id), seqs)
+          pages.map(Ok(_))
       }
     }
 
@@ -83,24 +64,14 @@ class EfController @Inject()(efRepository: EfRepository,
       }
     }
 
-  def getWorksetVolumes(wid: WorksetId): Action[AnyContent] =
+  def getWorksetVolumes(wid: WorksetId,
+                        @ApiParam(value = "'true' whether to include part-of-speech information for tokens, 'false' otherwise", required = false, defaultValue = "true") pos: Boolean): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
           efRepository
             .getWorksetVolumes(wid)
-            .flatMap(efRepository.getVolumes)
-            .map(volumes => Ok(Json.toJson(volumes)))
-      }
-    }
-
-  def getWorksetVolumesNoPos(wid: WorksetId): Action[AnyContent] =
-    Action.async { implicit req =>
-      render.async {
-        case Accepts.Json() =>
-          efRepository
-            .getWorksetVolumes(wid)
-            .flatMap(efRepository.getVolumesNoPos)
+            .flatMap(ids => if (pos) efRepository.getVolumes(ids) else efRepository.getVolumesNoPos(ids))
             .map(volumes => Ok(Json.toJson(volumes)))
       }
     }

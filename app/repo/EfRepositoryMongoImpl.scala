@@ -222,14 +222,38 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //                { $project: { _id: 0 } },
   //                {
   //                    $addFields: {
+  //                        "page.header.tokenPosCount": {
+  //                            $map: {
+  //                                input: { $objectToArray: "$page.header.tokenPosCount" },
+  //                                as: "htpc",
+  //                                in: {
+  //                                    k: "$$htpc.k",
+  //                                    v: {
+  //                                        $objectToArray: "$$htpc.v"
+  //                                    }
+  //                                }
+  //                            }
+  //                        },
   //                        "page.body.tokenPosCount": {
   //                            $map: {
   //                                input: { $objectToArray: "$page.body.tokenPosCount" },
-  //                                as: "tpc",
+  //                                as: "btpc",
   //                                in: {
-  //                                    k: "$$tpc.k",
+  //                                    k: "$$btpc.k",
   //                                    v: {
-  //                                        $objectToArray: "$$tpc.v"
+  //                                        $objectToArray: "$$btpc.v"
+  //                                    }
+  //                                }
+  //                            }
+  //                        },
+  //                        "page.footer.tokenPosCount": {
+  //                            $map: {
+  //                                input: { $objectToArray: "$page.footer.tokenPosCount" },
+  //                                as: "ftpc",
+  //                                in: {
+  //                                    k: "$$ftpc.k",
+  //                                    v: {
+  //                                        $objectToArray: "$$ftpc.v"
   //                                    }
   //                                }
   //                            }
@@ -238,15 +262,43 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //                },
   //                {
   //                    $addFields: {
+  //                        "page.header.tokensCount": {
+  //                            $arrayToObject: {
+  //                                $map: {
+  //                                    input: "$page.header.tokenPosCount",
+  //                                    as: "htpc",
+  //                                    in: {
+  //                                        k: "$$htpc.k",
+  //                                        v: {
+  //                                            $sum: "$$htpc.v.v"
+  //                                        }
+  //                                    }
+  //                                }
+  //                            }
+  //                        },
   //                        "page.body.tokensCount": {
   //                            $arrayToObject: {
   //                                $map: {
   //                                    input: "$page.body.tokenPosCount",
-  //                                    as: "tpc",
+  //                                    as: "btpc",
   //                                    in: {
-  //                                        k: "$$tpc.k",
+  //                                        k: "$$btpc.k",
   //                                        v: {
-  //                                            $sum: "$$tpc.v.v"
+  //                                            $sum: "$$btpc.v.v"
+  //                                        }
+  //                                    }
+  //                                }
+  //                            }
+  //                        },
+  //                        "page.footer.tokensCount": {
+  //                            $arrayToObject: {
+  //                                $map: {
+  //                                    input: "$page.footer.tokenPosCount",
+  //                                    as: "ftpc",
+  //                                    in: {
+  //                                        k: "$$ftpc.k",
+  //                                        v: {
+  //                                            $sum: "$$ftpc.v.v"
   //                                        }
   //                                    }
   //                                }
@@ -256,7 +308,9 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //                },
   //                {
   //                    $project: {
-  //                        "page.body.tokenPosCount": 0
+  //                        "page.header.tokenPosCount": 0,
+  //                        "page.body.tokenPosCount": 0,
+  //                        "page.footer.tokenPosCount": 0
   //                    }
   //                },
   //
@@ -308,29 +362,81 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
               pipeline = List(
                 Match(document("$expr" -> document("$eq" -> List("$htid", """$$htid""")))),
                 Project(document("_id" -> 0)),
-                AddFields(document("page.body.tokenPosCount" -> document(
-                  "$map" -> document(
-                    "input" -> document("$objectToArray" -> "$page.body.tokenPosCount"),
-                    "as" -> "tpc",
-                    "in" -> document(
-                      "k" -> "$$tpc.k",
-                      "v" -> document("$objectToArray" -> "$$tpc.v")
-                    )
-                  )
-                ))),
-                AddFields(document("page.body.tokensCount" -> document(
-                  "$arrayToObject" -> document(
+                AddFields(document(
+                  "page.header.tokenPosCount" -> document(
                     "$map" -> document(
-                      "input" -> "$page.body.tokenPosCount",
-                      "as" -> "tpc",
+                      "input" -> document("$objectToArray" -> "$page.header.tokenPosCount"),
+                      "as" -> "htpc",
                       "in" -> document(
-                        "k" -> "$$tpc.k",
-                        "v" -> document("$sum" -> "$$tpc.v.v")
+                        "k" -> "$$htpc.k",
+                        "v" -> document("$objectToArray" -> "$$htpc.v")
+                      )
+                    )
+                  ),
+                  "page.body.tokenPosCount" -> document(
+                    "$map" -> document(
+                      "input" -> document("$objectToArray" -> "$page.body.tokenPosCount"),
+                      "as" -> "btpc",
+                      "in" -> document(
+                        "k" -> "$$btpc.k",
+                        "v" -> document("$objectToArray" -> "$$btpc.v")
+                      )
+                    )
+                  ),
+                  "page.footer.tokenPosCount" -> document(
+                    "$map" -> document(
+                      "input" -> document("$objectToArray" -> "$page.footer.tokenPosCount"),
+                      "as" -> "ftpc",
+                      "in" -> document(
+                        "k" -> "$$ftpc.k",
+                        "v" -> document("$objectToArray" -> "$$ftpc.v")
                       )
                     )
                   )
-                ))),
-                Project(document("page.body.tokenPosCount" -> 0)),
+                )),
+                AddFields(document(
+                  "page.header.tokensCount" -> document(
+                    "$arrayToObject" -> document(
+                      "$map" -> document(
+                        "input" -> "$page.header.tokenPosCount",
+                        "as" -> "htpc",
+                        "in" -> document(
+                          "k" -> "$$htpc.k",
+                          "v" -> document("$sum" -> "$$htpc.v.v")
+                        )
+                      )
+                    )
+                  ),
+                  "page.body.tokensCount" -> document(
+                    "$arrayToObject" -> document(
+                      "$map" -> document(
+                        "input" -> "$page.body.tokenPosCount",
+                        "as" -> "btpc",
+                        "in" -> document(
+                          "k" -> "$$btpc.k",
+                          "v" -> document("$sum" -> "$$btpc.v.v")
+                        )
+                      )
+                    )
+                  ),
+                  "page.footer.tokensCount" -> document(
+                    "$arrayToObject" -> document(
+                      "$map" -> document(
+                        "input" -> "$page.footer.tokenPosCount",
+                        "as" -> "ftpc",
+                        "in" -> document(
+                          "k" -> "$$ftpc.k",
+                          "v" -> document("$sum" -> "$$ftpc.v.v")
+                        )
+                      )
+                    )
+                  )
+                )),
+                Project(document(
+                  "page.header.tokenPosCount" -> 0,
+                  "page.body.tokenPosCount" -> 0,
+                  "page.footer.tokenPosCount" -> 0
+                )),
                 ReplaceRootField("page")
               ),
               as = "features.pages"
@@ -378,19 +484,43 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //    {
   //        $match: {
   //            htid: 'hvd.32044019369404',
-  //            "page.seq": { $in: [ '00000119'] }
+  //            "page.seq": { $in: ['00000119'] }
   //        }
   //    },
   //    {
   //        $addFields: {
+  //            "page.header.tokenPosCount": {
+  //                $map: {
+  //                    input: { $objectToArray: "$page.header.tokenPosCount" },
+  //                    as: "htpc",
+  //                    in: {
+  //                        k: "$$htpc.k",
+  //                        v: {
+  //                            $objectToArray: "$$htpc.v"
+  //                        }
+  //                    }
+  //                }
+  //            },
   //            "page.body.tokenPosCount": {
   //                $map: {
   //                    input: { $objectToArray: "$page.body.tokenPosCount" },
-  //                    as: "tpc",
+  //                    as: "btpc",
   //                    in: {
-  //                        k: "$$tpc.k",
+  //                        k: "$$btpc.k",
   //                        v: {
-  //                            $objectToArray: "$$tpc.v"
+  //                            $objectToArray: "$$btpc.v"
+  //                        }
+  //                    }
+  //                }
+  //            },
+  //            "page.footer.tokenPosCount": {
+  //                $map: {
+  //                    input: { $objectToArray: "$page.footer.tokenPosCount" },
+  //                    as: "ftpc",
+  //                    in: {
+  //                        k: "$$ftpc.k",
+  //                        v: {
+  //                            $objectToArray: "$$ftpc.v"
   //                        }
   //                    }
   //                }
@@ -399,15 +529,43 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //    },
   //    {
   //        $addFields: {
+  //            "page.header.tokensCount": {
+  //                $arrayToObject: {
+  //                    $map: {
+  //                        input: "$page.header.tokenPosCount",
+  //                        as: "htpc",
+  //                        in: {
+  //                            k: "$$htpc.k",
+  //                            v: {
+  //                                $sum: "$$htpc.v.v"
+  //                            }
+  //                        }
+  //                    }
+  //                }
+  //            },
   //            "page.body.tokensCount": {
   //                $arrayToObject: {
   //                    $map: {
   //                        input: "$page.body.tokenPosCount",
-  //                        as: "tpc",
+  //                        as: "btpc",
   //                        in: {
-  //                            k: "$$tpc.k",
+  //                            k: "$$btpc.k",
   //                            v: {
-  //                                $sum: "$$tpc.v.v"
+  //                                $sum: "$$btpc.v.v"
+  //                            }
+  //                        }
+  //                    }
+  //                }
+  //            },
+  //            "page.footer.tokensCount": {
+  //                $arrayToObject: {
+  //                    $map: {
+  //                        input: "$page.footer.tokenPosCount",
+  //                        as: "ftpc",
+  //                        in: {
+  //                            k: "$$ftpc.k",
+  //                            v: {
+  //                                $sum: "$$ftpc.v.v"
   //                            }
   //                        }
   //                    }
@@ -417,7 +575,9 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //    },
   //    {
   //        $project: {
-  //            "page.body.tokenPosCount": 0
+  //            "page.header.tokenPosCount": 0,
+  //            "page.body.tokenPosCount": 0,
+  //            "page.footer.tokenPosCount": 0
   //        }
   //    },
   //    {
@@ -439,29 +599,81 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
 
           List(
             Match(query),
-            AddFields(document("page.body.tokenPosCount" -> document(
-              "$map" -> document(
-                "input" -> document("$objectToArray" -> "$page.body.tokenPosCount"),
-                "as" -> "tpc",
-                "in" -> document(
-                  "k" -> "$$tpc.k",
-                  "v" -> document("$objectToArray" -> "$$tpc.v")
-                )
-              )
-            ))),
-            AddFields(document("page.body.tokensCount" -> document(
-              "$arrayToObject" -> document(
+            AddFields(document(
+              "page.header.tokenPosCount" -> document(
                 "$map" -> document(
-                  "input" -> "$page.body.tokenPosCount",
-                  "as" -> "tpc",
+                  "input" -> document("$objectToArray" -> "$page.header.tokenPosCount"),
+                  "as" -> "htpc",
                   "in" -> document(
-                    "k" -> "$$tpc.k",
-                    "v" -> document("$sum" -> "$$tpc.v.v")
+                    "k" -> "$$htpc.k",
+                    "v" -> document("$objectToArray" -> "$$htpc.v")
+                  )
+                )
+              ),
+              "page.body.tokenPosCount" -> document(
+                "$map" -> document(
+                  "input" -> document("$objectToArray" -> "$page.body.tokenPosCount"),
+                  "as" -> "btpc",
+                  "in" -> document(
+                    "k" -> "$$btpc.k",
+                    "v" -> document("$objectToArray" -> "$$btpc.v")
+                  )
+                )
+              ),
+              "page.footer.tokenPosCount" -> document(
+                "$map" -> document(
+                  "input" -> document("$objectToArray" -> "$page.footer.tokenPosCount"),
+                  "as" -> "ftpc",
+                  "in" -> document(
+                    "k" -> "$$ftpc.k",
+                    "v" -> document("$objectToArray" -> "$$ftpc.v")
                   )
                 )
               )
-            ))),
-            Project(document("page.body.tokenPosCount" -> 0)),
+            )),
+            AddFields(document(
+              "page.header.tokensCount" -> document(
+                "$arrayToObject" -> document(
+                  "$map" -> document(
+                    "input" -> "$page.header.tokenPosCount",
+                    "as" -> "htpc",
+                    "in" -> document(
+                      "k" -> "$$htpc.k",
+                      "v" -> document("$sum" -> "$$htpc.v.v")
+                    )
+                  )
+                )
+              ),
+              "page.body.tokensCount" -> document(
+                "$arrayToObject" -> document(
+                  "$map" -> document(
+                    "input" -> "$page.body.tokenPosCount",
+                    "as" -> "btpc",
+                    "in" -> document(
+                      "k" -> "$$btpc.k",
+                      "v" -> document("$sum" -> "$$btpc.v.v")
+                    )
+                  )
+                )
+              ),
+              "page.footer.tokensCount" -> document(
+                "$arrayToObject" -> document(
+                  "$map" -> document(
+                    "input" -> "$page.footer.tokenPosCount",
+                    "as" -> "ftpc",
+                    "in" -> document(
+                      "k" -> "$$ftpc.k",
+                      "v" -> document("$sum" -> "$$ftpc.v.v")
+                    )
+                  )
+                )
+              )
+            )),
+            Project(document(
+              "page.header.tokenPosCount" -> 0,
+              "page.body.tokenPosCount" -> 0,
+              "page.footer.tokenPosCount" -> 0
+            )),
             GroupField("htid")(
               "htid" -> FirstField("htid"),
               "pages" -> PushField("page")
