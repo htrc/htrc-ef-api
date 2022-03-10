@@ -1,7 +1,7 @@
 package repo
 
 import akka.stream.Materializer
-import exceptions.WorksetNotFoundException
+import exceptions.{VolumeNotFoundException, WorksetNotFoundException}
 import play.api.Logging
 import play.api.libs.json._
 import reactivemongo.api.ReadPreference
@@ -39,79 +39,94 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   protected def worksetsCol: Future[BSONCollection] =
     reactiveMongoApi.database.map(_.collection[BSONCollection]("worksets"))
 
-  //  db.getCollection("ef").aggregate([
+
+  override def getVolume(id: VolumeId, withPos: Boolean = true): Future[JsObject] =
+    if (withPos) getVolumeWithPos(id) else getVolumeNoPos(id)
+
+  override def getVolumes(ids: IdSet, withPos: Boolean = true): Future[List[JsObject]] =
+    if (withPos) getVolumesWithPos(ids) else getVolumesNoPos(ids)
+
+  protected def getVolumeWithPos(id: VolumeId): Future[JsObject] =
+    getVolumesWithPos(Set(id)).map {
+      case vol :: Nil => vol
+      case _ => throw VolumeNotFoundException(id)
+    }
+
+  //db.getCollection("ef").aggregate([
   //    {
-  //      $match: {
-  //      htid: { $in: ['hvd.32044019369404'] }
-  //    }
+  //        $match: {
+  //            htid: { $in: ['hvd.32044019369404'] }
+  //        }
   //    },
   //    {
-  //      $lookup: {
-  //      from: 'metadata',
-  //      let: { htid: '$htid' },
-  //      pipeline: [
-  //    {
-  //      $match: {
-  //      $expr: {
-  //      $eq: [ '$htid', '$$htid' ]
-  //    }
-  //    }
-  //    },
-  //    { $project: { _id: 0 } },
-  //    { $replaceRoot: { newRoot: '$metadata' } }
-  //      ],
-  //      as: 'metadata'
-  //    }
-  //    },
-  //    {
-  //      $unwind: '$metadata'
+  //        $lookup: {
+  //            from: 'metadata',
+  //            let: { htid: '$htid' },
+  //            pipeline: [
+  //                {
+  //                    $match: {
+  //                        $expr: {
+  //                            $eq: ['$htid', '$$htid']
+  //                        }
+  //                    }
+  //                },
+  //                { $project: { _id: 0 } },
+  //                { $replaceRoot: { newRoot: '$metadata' } }
+  //            ],
+  //            as: 'metadata'
+  //        }
   //    },
   //    {
-  //      $lookup: {
-  //      from: 'features',
-  //      let: { htid: '$htid' },
-  //      pipeline: [
-  //    {
-  //      $match: {
-  //      $expr: {
-  //      $eq: [ '$htid', '$$htid' ]
-  //    }
-  //    }
-  //    },
-  //    { $project: { _id: 0 } },
-  //    { $replaceRoot: { newRoot: '$features' } }
-  //      ],
-  //      as: 'features'
-  //    }
+  //        $unwind: '$metadata'
   //    },
   //    {
-  //      $unwind: '$features'
+  //        $lookup: {
+  //            from: 'features',
+  //            let: { htid: '$htid' },
+  //            pipeline: [
+  //                {
+  //                    $match: {
+  //                        $expr: {
+  //                            $eq: ['$htid', '$$htid']
+  //                        }
+  //                    }
+  //                },
+  //                { $project: { _id: 0 } },
+  //                { $replaceRoot: { newRoot: '$features' } }
+  //            ],
+  //            as: 'features'
+  //        }
   //    },
   //    {
-  //      $lookup: {
-  //      from: 'pages',
-  //      let: { htid: '$htid' },
-  //      pipeline: [
-  //    {
-  //      $match: {
-  //      $expr: {
-  //      $eq: [ '$htid', '$$htid' ]
-  //    }
-  //    }
-  //    },
-  //    { $project: { _id: 0 } },
-  //    { $replaceRoot: { newRoot: '$page' } }
-  //      ],
-  //      as: 'features.pages'
-  //    }
+  //        $unwind: '$features'
   //    },
   //    {
-  //      $project: {
-  //      _id: 0
+  //        $lookup: {
+  //            from: 'pages',
+  //            let: { htid: '$htid' },
+  //            pipeline: [
+  //                {
+  //                    $match: {
+  //                        $expr: {
+  //                            $eq: ['$htid', '$$htid']
+  //                        }
+  //                    }
+  //                },
+  //                { $project: { _id: 0 } },
+  //                { $replaceRoot: { newRoot: '$page' } }
+  //            ],
+  //            as: 'features.pages'
+  //        }
+  //    },
+  //    {
+  //        $project: {
+  //            _id: 0
+  //        }
   //    }
-  //    }
-  //  ])
-  override def getVolumes(ids: IdSet): Future[List[JsObject]] = {
+  //])
+  protected def getVolumesWithPos(ids: IdSet): Future[List[JsObject]] = {
+    require(ids.nonEmpty)
+
     for {
       col <- efCol; features <- featuresCol; metadata <- metadataCol; pages <- pagesCol
       volumes <- col
@@ -158,6 +173,12 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
         .collect[List]()
     } yield volumes
   }
+
+  protected def getVolumeNoPos(id: VolumeId): Future[JsObject] =
+    getVolumesNoPos(Set(id)).map {
+      case vol :: Nil => vol
+      case _ => throw VolumeNotFoundException(id)
+    }
 
   //db.getCollection("ef").aggregate([
   //    {
@@ -325,7 +346,9 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //        }
   //    }
   //])
-  override def getVolumesNoPos(ids: IdSet): Future[List[JsObject]] = {
+  protected def getVolumesNoPos(ids: IdSet): Future[List[JsObject]] = {
+    require(ids.nonEmpty)
+
     for {
       col <- efCol; features <- featuresCol; metadata <- metadataCol; pages <- pagesCol
       volumes <- col
@@ -448,7 +471,17 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
     } yield volumes
   }
 
+  override def getVolumeMetadata(id: VolumeId): Future[JsObject] = {
+    val ids = Set(id)
+    getVolumesMetadata(ids).map {
+      case meta :: Nil => meta
+      case _ => throw VolumeNotFoundException(id)
+    }
+  }
+
   override def getVolumesMetadata(ids: IdSet): Future[List[JsObject]] = {
+    require(ids.nonEmpty)
+
     val query = document("htid" -> document("$in" -> ids))
     val projection = document("_id" -> 0)
 
@@ -458,7 +491,10 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
       .flatMap(_.collect[List]())
   }
 
-  override def getVolumePages(id: VolumeId, pageSeqs: Option[PageSet] = None): Future[JsObject] = {
+  override def getVolumePages(id: VolumeId, pageSeqs: Option[PageSet] = None, withPos: Boolean = true): Future[JsObject] =
+    if (withPos) getVolumePagesWithPos(id, pageSeqs) else getVolumePagesNoPos(id, pageSeqs)
+
+  protected def getVolumePagesWithPos(id: VolumeId, pageSeqs: Option[PageSet] = None): Future[JsObject] = {
     pagesCol.flatMap { col =>
       var query = document("htid" -> id)
       pageSeqs.foreach(seqs => query ++= "page.seq" -> document("$in" -> seqs))
@@ -476,7 +512,8 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
             Project(document("_id" -> 0))
           )
         }
-        .head
+        .headOption
+        .map(_.getOrElse { throw VolumeNotFoundException(id) })
     }
   }
 
@@ -588,7 +625,7 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //        }
   //    }
   //])
-  override def getVolumePagesNoPos(id: VolumeId, pageSeqs: Option[PageSet]): Future[JsObject] = {
+  protected def getVolumePagesNoPos(id: VolumeId, pageSeqs: Option[PageSet]): Future[JsObject] = {
     pagesCol.flatMap { col =>
       var query = document("htid" -> id)
       pageSeqs.foreach(seqs => query ++= "page.seq" -> document("$in" -> seqs))
@@ -681,11 +718,14 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
             Project(document("_id" -> 0))
           )
         }
-        .head
+        .headOption
+        .map(_.getOrElse { throw VolumeNotFoundException(id) })
     }
   }
 
   override def createWorkset(ids: IdSet): Future[WorksetId] = {
+    require(ids.nonEmpty)
+
     val worksetId = BSONObjectID.generate()
 
     worksetsCol

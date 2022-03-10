@@ -4,9 +4,9 @@
 
 GET     /swagger.json                   controllers.Assets.at(path="/public", file="swagger.json")
 
-GET     /volumes/:id                    controllers.EfController.getVolume(id, pos: Boolean ?= true)
-GET     /volumes/:id/metadata           controllers.EfController.getVolumeMetadata(id)
-GET     /volumes/:id/pages              controllers.EfController.getVolumePages(id, seq: Option[String] ?= None, pos: Boolean ?= true)
+GET     /volumes/:cleanId               controllers.EfController.getVolume(cleanId, pos: Boolean ?= true)
+GET     /volumes/:cleanId/metadata      controllers.EfController.getVolumeMetadata(cleanId)
+GET     /volumes/:cleanId/pages         controllers.EfController.getVolumePages(cleanId, seq: Option[String] ?= None, pos: Boolean ?= true)
 POST    /worksets                       controllers.EfController.createWorkset
 DELETE  /worksets/:id                   controllers.EfController.deleteWorkset(id)
 GET     /worksets/:id/volumes           controllers.EfController.getWorksetVolumes(id, pos: Boolean ?= true)

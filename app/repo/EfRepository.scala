@@ -12,11 +12,12 @@ trait EfRepository {
   type IdSet = Set[VolumeId]
   type PageSet = Set[String]
 
-  def getVolumes(ids: IdSet): Future[List[JsObject]]
-  def getVolumesNoPos(ids: IdSet): Future[List[JsObject]]
+  def getVolume(id: VolumeId, withPos: Boolean = true): Future[JsObject]
+  def getVolumes(ids: IdSet, withPos: Boolean = true): Future[List[JsObject]]
+  def getVolumePages(id: VolumeId, pageSeqs: Option[PageSet] = None, withPos: Boolean = true): Future[JsObject]
+
+  def getVolumeMetadata(id: VolumeId): Future[JsObject]
   def getVolumesMetadata(ids: IdSet): Future[List[JsObject]]
-  def getVolumePages(id: VolumeId, pageSeqs: Option[PageSet] = None): Future[JsObject]
-  def getVolumePagesNoPos(id: VolumeId, pageSeqs: Option[PageSet] = None): Future[JsObject]
 
   def createWorkset(ids: IdSet): Future[WorksetId]
   def deleteWorkset(id: WorksetId): Future[Unit]

@@ -1,9 +1,9 @@
-import exceptions.ApiException
+import exceptions.{ApiException, ErrorCodes}
 import play.api._
 import play.api.http.DefaultHttpErrorHandler
-import play.api.mvc.Results._
 import play.api.mvc._
 import play.api.routing.Router
+import protocol.WrappedResponse
 
 import javax.inject._
 import scala.concurrent._
@@ -19,8 +19,8 @@ class ErrorHandler @Inject()(env: Environment,
     logger.error(request.toString(), exception)
 
     exception match {
-      case e: ApiException => Future.successful(Status(e.code)(e.getMessage))
-      case _ => super.onServerError(request, exception)
+      case e: ApiException => Future.successful(WrappedResponse(e.code, e.getMessage))
+      case _ => Future.successful(WrappedResponse(ErrorCodes.InternalServerError, exception.toString))
     }
   }
 }

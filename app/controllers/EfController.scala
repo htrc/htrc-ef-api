@@ -1,12 +1,13 @@
 package controllers
 
-import javax.inject.Inject
 import io.swagger.annotations.ApiParam
-import play.api.mvc._
-import repo.EfRepository
 import play.api.libs.json._
+import play.api.mvc._
+import protocol.WrappedResponse
+import repo.EfRepository
 import utils.IdUtils._
 
+import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 
 class EfController @Inject()(efRepository: EfRepository,
@@ -14,36 +15,36 @@ class EfController @Inject()(efRepository: EfRepository,
                             (implicit val ec: ExecutionContext) extends AbstractController(components) {
   import efRepository.{VolumeId, WorksetId}
 
-  def getVolume(@ApiParam(value = "HTID of the volume to fetch", required = true) id: VolumeId,
-                @ApiParam(value = "'true' whether to include part-of-speech information for tokens, 'false' otherwise", required = false, defaultValue = "true") pos: Boolean): Action[AnyContent] =
+  def getVolume(@ApiParam(value = "the 'clean' HTID of the volume", required = true) cleanId: VolumeId,
+                @ApiParam(value = "'true' whether to include part-of-speech information for tokens, " +
+                  "'false' otherwise", required = false, defaultValue = "true") pos: Boolean): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
-          val ids = Set(uncleanId(id))
-          val volumes = if (pos) efRepository.getVolumes(ids) else efRepository.getVolumesNoPos(ids)
-          volumes.map(volumes => Ok(Json.toJson(volumes.headOption)))
+          val id = uncleanId(cleanId)
+          efRepository.getVolume(id, pos).map(WrappedResponse(_))
       }
     }
 
-  def getVolumeMetadata(@ApiParam(value = "HTID of the volume to fetch", required = true) id: VolumeId): Action[AnyContent] =
+  def getVolumeMetadata(@ApiParam(value = "the 'clean' HTID of the volume", required = true) cleanId: VolumeId): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
-          val ids = Set(uncleanId(id))
-          efRepository.getVolumesMetadata(ids)
-            .map(metadata => Ok(Json.toJson(metadata.headOption)))
+          val id = uncleanId(cleanId)
+          efRepository.getVolumeMetadata(id).map(WrappedResponse(_))
       }
     }
 
-  def getVolumePages(@ApiParam(value = "HTID of the volume to fetch", required = true) id: VolumeId,
-                     @ApiParam(value = "Comma-separated list of page sequence numbers to fetch") seq: Option[String],
-                     @ApiParam(value = "'true' whether to include part-of-speech information for tokens, 'false' otherwise", required = false, defaultValue = "true") pos: Boolean): Action[AnyContent] =
+  def getVolumePages(@ApiParam(value = "the 'clean' HTID of the volume", required = true) cleanId: VolumeId,
+                     @ApiParam(value = "comma-separated list of page sequence numbers to fetch") seq: Option[String],
+                     @ApiParam(value = "'true' whether to include part-of-speech information for tokens, " +
+                       "'false' otherwise", required = false, defaultValue = "true") pos: Boolean): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
+          val id = uncleanId(cleanId)
           val seqs = seq.map(_.split(',').toSet)
-          val pages = if (pos) efRepository.getVolumePages(uncleanId(id), seqs) else efRepository.getVolumePagesNoPos(uncleanId(id), seqs)
-          pages.map(Ok(_))
+          efRepository.getVolumePages(id, seqs, pos).map(WrappedResponse(_))
       }
     }
 
@@ -52,38 +53,38 @@ class EfController @Inject()(efRepository: EfRepository,
       render.async {
         case Accepts.Json() =>
           val ids = req.body.linesIterator.toSet
-          efRepository.createWorkset(ids).map(wid => Created(Json.obj("id" -> wid)))
+          efRepository.createWorkset(ids).map(wid => WrappedResponse(Json.obj("id" -> wid)))
       }
     }
 
-  def deleteWorkset(wid: WorksetId): Action[AnyContent] =
+  def deleteWorkset(@ApiParam(value = "the workset ID", required = true) wid: WorksetId): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
-          efRepository.deleteWorkset(wid).map(_ => NoContent)
+          efRepository.deleteWorkset(wid).map(_ => WrappedResponse.Empty)
       }
     }
 
-  def getWorksetVolumes(wid: WorksetId,
+  def getWorksetVolumes(@ApiParam(value = "the workset ID", required = true) wid: WorksetId,
                         @ApiParam(value = "'true' whether to include part-of-speech information for tokens, 'false' otherwise", required = false, defaultValue = "true") pos: Boolean): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
           efRepository
             .getWorksetVolumes(wid)
-            .flatMap(ids => if (pos) efRepository.getVolumes(ids) else efRepository.getVolumesNoPos(ids))
-            .map(volumes => Ok(Json.toJson(volumes)))
+            .flatMap(ids => efRepository.getVolumes(ids, pos))
+            .map(WrappedResponse(_))
       }
     }
 
-  def getWorksetVolumesMetadata(wid: WorksetId): Action[AnyContent] =
+  def getWorksetVolumesMetadata(@ApiParam(value = "the workset ID", required = true) wid: WorksetId): Action[AnyContent] =
     Action.async { implicit req =>
       render.async {
         case Accepts.Json() =>
           efRepository
             .getWorksetVolumes(wid)
             .flatMap(efRepository.getVolumesMetadata)
-            .map(metadata => Ok(Json.toJson(metadata)))
+            .map(WrappedResponse(_))
       }
     }
 }
