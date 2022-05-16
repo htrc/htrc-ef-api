@@ -50,7 +50,7 @@ lazy val ammoniteSettings = Seq(
     {
       val version = scalaBinaryVersion.value match {
         case "2.10" => "1.0.3"
-        case _ ⇒  "2.5.2"
+        case _ ⇒  "2.5.3"
       }
       "com.lihaoyi" % "ammonite" % version % Test cross CrossVersion.full
     },
@@ -101,10 +101,11 @@ lazy val `ef-api` = (project in file("."))
     libraryDependencies ++= Seq(
       guice,
       filters,
-      "com.typesafe.play"             %% "play-streams"                     % "2.8.13",
-      "org.reactivemongo"             %% "play2-reactivemongo"              % "1.0.10-play28",
+      "com.typesafe.play"             %% "play-streams"                     % "2.8.15",
+      "org.reactivemongo"             %% "play2-reactivemongo"              % "1.1.0-play28-RC4",
       "org.reactivemongo"             %% "reactivemongo-akkastream"         % "1.0.10",
-      "io.swagger"                    %  "swagger-annotations"              % "1.6.5",
+      "io.swagger"                    %  "swagger-annotations"              % "1.6.6",
+      "org.webjars"                   %  "swagger-ui"                       % "4.10.3",
       "org.scalatestplus.play"        %% "scalatestplus-play"               % "5.1.0"   % Test
     ),
     routesGenerator := InjectedRoutesGenerator
