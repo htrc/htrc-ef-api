@@ -2,12 +2,18 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-GET     /swagger.json                   controllers.Assets.at(path="/public", file="swagger.json")
+### NoDocs ###
+GET   /docs/swagger-ui/*file        controllers.Assets.at(path: String = "/public/lib/swagger-ui", file: String)
 
-GET     /volumes/:cleanId               controllers.EfController.getVolume(cleanId, pos: Boolean ?= true)
-GET     /volumes/:cleanId/metadata      controllers.EfController.getVolumeMetadata(cleanId)
-GET     /volumes/:cleanId/pages         controllers.EfController.getVolumePages(cleanId, seq: Option[String] ?= None, pos: Boolean ?= true)
+### NoDocs ###
+GET   /assets/*file                 controllers.Assets.versioned(path = "/public", file: Asset)
+
+#GET     /swagger.json                   controllers.Assets.at(path = "/public", file = "swagger.json")
+
+GET     /volumes/:cleanId               controllers.EfController.getVolume(cleanId, pos: Boolean ?= true, fields: Option[String] ?= None)
+GET     /volumes/:cleanId/metadata      controllers.EfController.getVolumeMetadata(cleanId, fields: Option[String] ?= None)
+GET     /volumes/:cleanId/pages         controllers.EfController.getVolumePages(cleanId, seq: Option[String] ?= None, pos: Boolean ?= true, fields: Option[String] ?= None)
 POST    /worksets                       controllers.EfController.createWorkset
 DELETE  /worksets/:id                   controllers.EfController.deleteWorkset(id)
-GET     /worksets/:id/volumes           controllers.EfController.getWorksetVolumes(id, pos: Boolean ?= true)
-GET     /worksets/:id/metadata          controllers.EfController.getWorksetVolumesMetadata(id)
+GET     /worksets/:id/volumes           controllers.EfController.getWorksetVolumes(id, pos: Boolean ?= true, fields: Option[String] ?= None)
+GET     /worksets/:id/metadata          controllers.EfController.getWorksetVolumesMetadata(id, fields: Option[String] ?= None)

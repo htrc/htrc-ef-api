@@ -4,8 +4,7 @@ import akka.stream.Materializer
 import exceptions.{VolumeNotFoundException, WorksetNotFoundException}
 import play.api.Logging
 import play.api.libs.json._
-import reactivemongo.api.ReadPreference
-import reactivemongo.api.bson.{BSONObjectID, document}
+import reactivemongo.api.bson._
 
 import java.time.Instant
 import javax.inject.{Inject, Singleton}
@@ -40,14 +39,14 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
     reactiveMongoApi.database.map(_.collection[BSONCollection]("worksets"))
 
 
-  override def getVolume(id: VolumeId, withPos: Boolean = true): Future[JsObject] =
-    if (withPos) getVolumeWithPos(id) else getVolumeNoPos(id)
+  override def getVolume(id: VolumeId, withPos: Boolean = true, fields: List[String] = List.empty): Future[JsObject] =
+    if (withPos) getVolumeWithPos(id, fields) else getVolumeNoPos(id, fields)
 
-  override def getVolumes(ids: IdSet, withPos: Boolean = true): Future[List[JsObject]] =
-    if (withPos) getVolumesWithPos(ids) else getVolumesNoPos(ids)
+  override def getVolumes(ids: IdSet, withPos: Boolean = true, fields: List[String] = List.empty): Future[List[JsObject]] =
+    if (withPos) getVolumesWithPos(ids, fields) else getVolumesNoPos(ids, fields)
 
-  protected def getVolumeWithPos(id: VolumeId): Future[JsObject] =
-    getVolumesWithPos(Set(id)).map {
+  protected def getVolumeWithPos(id: VolumeId, fields: List[String] = List.empty): Future[JsObject] =
+    getVolumesWithPos(Set(id), fields).map {
       case vol :: Nil => vol
       case _ => throw VolumeNotFoundException(id)
     }
@@ -124,8 +123,10 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //        }
   //    }
   //])
-  protected def getVolumesWithPos(ids: IdSet): Future[List[JsObject]] = {
+  protected def getVolumesWithPos(ids: IdSet, fields: List[String] = List.empty): Future[List[JsObject]] = {
     require(ids.nonEmpty)
+
+    val projFields = BSONDocument(fields.map(f => f -> BSONInteger(1)))
 
     for {
       col <- efCol; features <- featuresCol; metadata <- metadataCol; pages <- pagesCol
@@ -167,15 +168,15 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
               ),
               as = "features.pages"
             ),
-            Project(document("_id" -> 0))
+            Project(document("_id" -> 0) ++ projFields)
           )
         }
         .collect[List]()
     } yield volumes
   }
 
-  protected def getVolumeNoPos(id: VolumeId): Future[JsObject] =
-    getVolumesNoPos(Set(id)).map {
+  protected def getVolumeNoPos(id: VolumeId, fields: List[String] = List.empty): Future[JsObject] =
+    getVolumesNoPos(Set(id), fields).map {
       case vol :: Nil => vol
       case _ => throw VolumeNotFoundException(id)
     }
@@ -346,8 +347,10 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //        }
   //    }
   //])
-  protected def getVolumesNoPos(ids: IdSet): Future[List[JsObject]] = {
+  protected def getVolumesNoPos(ids: IdSet, fields: List[String] = List.empty): Future[List[JsObject]] = {
     require(ids.nonEmpty)
+
+    val projFields = BSONDocument(fields.map(f => f -> BSONInteger(1)))
 
     for {
       col <- efCol; features <- featuresCol; metadata <- metadataCol; pages <- pagesCol
@@ -464,26 +467,27 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
               ),
               as = "features.pages"
             ),
-            Project(document("_id" -> 0))
+            Project(document("_id" -> 0) ++ projFields)
           )
         }
         .collect[List]()
     } yield volumes
   }
 
-  override def getVolumeMetadata(id: VolumeId): Future[JsObject] = {
+  override def getVolumeMetadata(id: VolumeId, fields: List[String] = List.empty): Future[JsObject] = {
     val ids = Set(id)
-    getVolumesMetadata(ids).map {
+    getVolumesMetadata(ids, fields).map {
       case meta :: Nil => meta
       case _ => throw VolumeNotFoundException(id)
     }
   }
 
-  override def getVolumesMetadata(ids: IdSet): Future[List[JsObject]] = {
+  override def getVolumesMetadata(ids: IdSet, fields: List[String] = List.empty): Future[List[JsObject]] = {
     require(ids.nonEmpty)
 
     val query = document("htid" -> document("$in" -> ids))
-    val projection = document("_id" -> 0)
+    val projFields = BSONDocument(fields.map(f => f -> BSONInteger(1)))
+    val projection = document("_id" -> 0) ++ projFields
 
     metadataCol
       .map(_.find(query, Some(projection)))
@@ -491,13 +495,15 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
       .flatMap(_.collect[List]())
   }
 
-  override def getVolumePages(id: VolumeId, pageSeqs: Option[PageSet] = None, withPos: Boolean = true): Future[JsObject] =
-    if (withPos) getVolumePagesWithPos(id, pageSeqs) else getVolumePagesNoPos(id, pageSeqs)
+  override def getVolumePages(id: VolumeId, pageSeqs: Option[PageSet] = None, withPos: Boolean = true, fields: List[String] = List.empty): Future[JsObject] =
+    if (withPos) getVolumePagesWithPos(id, pageSeqs, fields) else getVolumePagesNoPos(id, pageSeqs, fields)
 
-  protected def getVolumePagesWithPos(id: VolumeId, pageSeqs: Option[PageSet] = None): Future[JsObject] = {
+  protected def getVolumePagesWithPos(id: VolumeId, pageSeqs: Option[PageSet] = None, fields: List[String] = List.empty): Future[JsObject] = {
     pagesCol.flatMap { col =>
       var query = document("htid" -> id)
       pageSeqs.foreach(seqs => query ++= "page.seq" -> document("$in" -> seqs))
+
+      val projFields = BSONDocument(fields.map(f => f -> BSONInteger(1)))
 
       col
         .aggregateWith[JsObject]() { framework =>
@@ -509,7 +515,7 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
               "htid" -> FirstField("htid"),
               "pages" -> PushField("page")
             ),
-            Project(document("_id" -> 0))
+            Project(document("_id" -> 0) ++ projFields)
           )
         }
         .headOption
@@ -625,10 +631,12 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //        }
   //    }
   //])
-  protected def getVolumePagesNoPos(id: VolumeId, pageSeqs: Option[PageSet]): Future[JsObject] = {
+  protected def getVolumePagesNoPos(id: VolumeId, pageSeqs: Option[PageSet], fields: List[String] = List.empty): Future[JsObject] = {
     pagesCol.flatMap { col =>
       var query = document("htid" -> id)
       pageSeqs.foreach(seqs => query ++= "page.seq" -> document("$in" -> seqs))
+
+      val projFields = BSONDocument(fields.map(f => f -> BSONInteger(1)))
 
       col
         .aggregateWith[JsObject]() { framework =>
@@ -715,7 +723,7 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
               "htid" -> FirstField("htid"),
               "pages" -> PushField("page")
             ),
-            Project(document("_id" -> 0))
+            Project(document("_id" -> 0) ++ projFields)
           )
         }
         .headOption
