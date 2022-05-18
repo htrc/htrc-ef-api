@@ -124,7 +124,7 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //    }
   //])
   protected def getVolumesWithPos(ids: IdSet, fields: List[String] = List.empty): Future[List[JsObject]] = {
-    require(ids.nonEmpty)
+    //require(ids.nonEmpty)
 
     val projFields = BSONDocument(fields.map(f => f -> BSONInteger(1)))
 
@@ -134,8 +134,10 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
         .aggregateWith[JsObject]() { framework =>
           import framework._
 
+          val query = if (ids.isEmpty) document() else document("htid" -> document("$in" -> ids))
+
           List(
-            Match(document("htid" -> document("$in" -> ids))),
+            Match(query),
             LookupPipeline(
               from = metadata.name,
               let = document("htid" -> "$htid"),
@@ -348,7 +350,7 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   //    }
   //])
   protected def getVolumesNoPos(ids: IdSet, fields: List[String] = List.empty): Future[List[JsObject]] = {
-    require(ids.nonEmpty)
+    //require(ids.nonEmpty)
 
     val projFields = BSONDocument(fields.map(f => f -> BSONInteger(1)))
 
@@ -358,8 +360,10 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
         .aggregateWith[JsObject]() { framework =>
           import framework._
 
+          val query = if (ids.isEmpty) document() else document("htid" -> document("$in" -> ids))
+
           List(
-            Match(document("htid" -> document("$in" -> ids))),
+            Match(query),
             LookupPipeline(
               from = metadata.name,
               let = document("htid" -> "$htid"),
@@ -483,9 +487,9 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   }
 
   override def getVolumesMetadata(ids: IdSet, fields: List[String] = List.empty): Future[List[JsObject]] = {
-    require(ids.nonEmpty)
+    //require(ids.nonEmpty)
 
-    val query = document("htid" -> document("$in" -> ids))
+    val query = if (ids.isEmpty) document() else document("htid" -> document("$in" -> ids))
     val projFields = BSONDocument(fields.map(f => f -> BSONInteger(1)))
     val projection = document("_id" -> 0) ++ projFields
 
@@ -757,17 +761,21 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   }
 
   override def getWorksetVolumes(id: WorksetId): Future[IdSet] = {
-    val query = document("_id" -> BSONObjectID.parse(id).get)
-    val projection = document("_id" -> 0, "htids" -> 1)
+    if (id == "all") {
+      Future.successful(Set.empty)
+    } else {
+      val query = document("_id" -> BSONObjectID.parse(id).get)
+      val projection = document("_id" -> 0, "htids" -> 1)
 
-    worksetsCol
-      .flatMap(_
-        .find(query, Some(projection))
-        .one[JsObject]
-        .map {
-          case Some(json) => (json \ "htids").as[IdSet]
-          case None => throw WorksetNotFoundException(id)
-        }
-      )
+      worksetsCol
+        .flatMap(_
+          .find(query, Some(projection))
+          .one[JsObject]
+          .map {
+            case Some(json) => (json \ "htids").as[IdSet]
+            case None => throw WorksetNotFoundException(id)
+          }
+        )
+    }
   }
 }
