@@ -56,7 +56,7 @@ class EfController @Inject()(efRepository: EfRepository,
     Action.async(parse.text) { implicit req =>
       render.async {
         case Accepts.Json() =>
-          val ids = req.body.linesIterator.toSet
+          val ids = tokenize(req.body, delims = " \n").toSet
           efRepository.createWorkset(ids).map(wid => WrappedResponse(Json.obj("id" -> wid)))
       }
     }
