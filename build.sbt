@@ -1,12 +1,10 @@
 showCurrentGitBranch
 
-git.useGitDescribe := true
-
-lazy val commonSettings = Seq(
+inThisBuild(Seq(
   organization := "org.hathitrust.htrc",
   organizationName := "HathiTrust Research Center",
   organizationHomepage := Some(url("https://www.hathitrust.org/htrc")),
-  scalaVersion := "2.13.8",
+  scalaVersion := "2.13.10",
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
@@ -25,12 +23,32 @@ lazy val commonSettings = Seq(
     ("Git-Dirty", git.gitUncommittedChanges.value.toString),
     ("Build-Date", new java.util.Date().toString)
   ),
-  Compile / compile / wartremoverWarnings ++= Warts.unsafe.diff(Seq(
-    Wart.DefaultArguments,
-    Wart.NonUnitStatements,
-    Wart.Any,
-    Wart.StringPlusAny
-  ))
+  versionScheme := Some("semver-spec"),
+  credentials += Credentials(
+    "Sonatype Nexus Repository Manager", // realm
+    "nexus.htrc.illinois.edu", // host
+    "drhtrc", // user
+    sys.env.getOrElse("HTRC_NEXUS_DRHTRC_PWD", "abc123") // password
+  )
+))
+
+lazy val ammoniteSettings = Seq(
+  libraryDependencies +=
+    {
+      val version = scalaBinaryVersion.value match {
+        case "2.10" => "1.0.3"
+        case "2.11" => "1.6.7"
+        case _ ⇒  "2.5.6"
+      }
+      "com.lihaoyi" % "ammonite" % version % Test cross CrossVersion.full
+    },
+  Test / sourceGenerators += Def.task {
+    val file = (Test / sourceManaged).value / "amm.scala"
+    IO.write(file, """object amm extends App { ammonite.AmmoniteMain.main(args) }""")
+    Seq(file)
+  }.taskValue,
+  connectInput := true,
+  outputStrategy := Some(StdoutOutput)
 )
 
 lazy val buildInfoSettings = Seq(
@@ -43,24 +61,6 @@ lazy val buildInfoSettings = Seq(
     "gitDirty" -> git.gitUncommittedChanges.value,
     "nameWithVersion" -> s"${name.value} ${version.value}"
   )
-)
-
-lazy val ammoniteSettings = Seq(
-  libraryDependencies +=
-    {
-      val version = scalaBinaryVersion.value match {
-        case "2.10" => "1.0.3"
-        case _ ⇒  "2.5.3"
-      }
-      "com.lihaoyi" % "ammonite" % version % Test cross CrossVersion.full
-    },
-  Test / sourceGenerators += Def.task {
-    val file = (Test / sourceManaged).value / "amm.scala"
-    IO.write(file, """object amm extends App { ammonite.Main.main(args) }""")
-    Seq(file)
-  }.taskValue,
-  connectInput := true,
-  outputStrategy := Some(StdoutOutput)
 )
 
 lazy val dockerSettings = Seq(
@@ -91,7 +91,6 @@ lazy val swaggerSettings = Seq(
 
 lazy val `ef-api` = (project in file("."))
   .enablePlugins(PlayScala, BuildInfoPlugin, GitVersioning, GitBranchPrompt, JavaAppPackaging, DockerPlugin)
-  .settings(commonSettings)
   .settings(buildInfoSettings)
   .settings(ammoniteSettings)
   .settings(dockerSettings)
@@ -101,11 +100,11 @@ lazy val `ef-api` = (project in file("."))
     libraryDependencies ++= Seq(
       guice,
       filters,
-      "com.typesafe.play"             %% "play-streams"                     % "2.8.15",
-      "org.reactivemongo"             %% "play2-reactivemongo"              % "1.1.0-play28-RC4",
+      "com.typesafe.play"             %% "play-streams"                     % "2.8.19",
+      "org.reactivemongo"             %% "play2-reactivemongo"              % "1.1.0-play28-RC7",
       "org.reactivemongo"             %% "reactivemongo-akkastream"         % "1.0.10",
-      "io.swagger"                    %  "swagger-annotations"              % "1.6.6",
-      "org.webjars"                   %  "swagger-ui"                       % "4.10.3",
+      "io.swagger"                    %  "swagger-annotations"              % "1.6.9",
+      "org.webjars"                   %  "swagger-ui"                       % "4.15.5",
       "org.scalatestplus.play"        %% "scalatestplus-play"               % "5.1.0"   % Test
     ),
     routesGenerator := InjectedRoutesGenerator
