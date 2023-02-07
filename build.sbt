@@ -73,7 +73,9 @@ lazy val dockerSettings = Seq(
     // don't write any pid files
     "-Dpidfile.path=/dev/null",
     // reference a logback config file that has no file appenders
-    "-Dlogback.configurationFile=conf/logback-prod.xml"
+    "-Dlogback.configurationFile=conf/logback-prod.xml",
+    // https://www.playframework.com/documentation/2.8.x/SettingsLogger#Using-an-external-configuration-file
+    "-Dlogger.file=conf/logback-prod.xml"
   )
 )
 
