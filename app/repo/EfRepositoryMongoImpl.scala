@@ -5,6 +5,7 @@ import exceptions.{VolumeNotFoundException, WorksetNotFoundException}
 import play.api.Logging
 import play.api.libs.json._
 import reactivemongo.api.bson._
+import repo.models._
 
 import java.time.Instant
 import javax.inject.{Inject, Singleton}
@@ -15,8 +16,7 @@ import reactivemongo.api.bson.collection.BSONCollection
 
 // BSON-JSON conversions/collection
 import reactivemongo.akkastream.cursorProducer
-import reactivemongo.play.json.compat._
-import reactivemongo.play.json.compat.json2bson.{toDocumentReader, toDocumentWriter}
+import reactivemongo.play.json.compat.json2bson.toDocumentReader
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -24,8 +24,6 @@ import scala.concurrent.{ExecutionContext, Future}
 class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
                                      (implicit ec: ExecutionContext, m: Materializer)
   extends EfRepository with ReactiveMongoComponents with Logging {
-
-  val _ = implicitly[reactivemongo.api.bson.BSONDocumentWriter[JsObject]]
 
   protected def efCol: Future[BSONCollection] =
     reactiveMongoApi.database.map(_.collection[BSONCollection]("ef"))
@@ -38,6 +36,14 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
   protected def worksetsCol: Future[BSONCollection] =
     reactiveMongoApi.database.map(_.collection[BSONCollection]("worksets"))
 
+
+  override def hasVolume(id: VolumeId): Future[Boolean] = {
+    val query = document("htid" -> id)
+
+    efCol
+      .map(_.count(Some(query), limit = Some(1)))
+      .flatMap(_.map(_ == 1))
+  }
 
   override def getVolume(id: VolumeId, withPos: Boolean = true, fields: List[String] = List.empty): Future[JsObject] =
     if (withPos) getVolumeWithPos(id, fields) else getVolumeNoPos(id, fields)
@@ -735,21 +741,57 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
     }
   }
 
-  override def createWorkset(ids: IdSet): Future[WorksetId] = {
+  // db.getCollection("ef").aggregate([
+  //    {
+  //        $match: {
+  //            htid: { $in: ["hvd.32044103226122", "hvd.32044090301284", "abc.12345123"] }
+  //        }
+  //    },
+  //    {
+  //        $group: {
+  //            _id: null,
+  //            htids: { $push: "$htid" }
+  //        }
+  //    },
+  //    {
+  //        $project: {
+  //            _id: 0
+  //        }
+  //    },
+  //    {
+  //        $addFields: {
+  //            created: "$$NOW"
+  //        }
+  //    },
+  //    {
+  //        $merge: {
+  //            into: "worksets"
+  //        }
+  //    }
+  // ])
+  override def createWorkset(ids: IdSet): Future[Workset] = {
     require(ids.nonEmpty)
 
     val worksetId = BSONObjectID.generate()
 
-    worksetsCol
+    efCol
       .flatMap(_
-        .insert(ordered = false)
-        .one(document(
-          "_id" -> worksetId,
-          "htids" -> ids,
-          "created" -> Instant.now
-        ))
+        .aggregateWith[Workset]() { framework =>
+          import framework._
+
+          List(
+            Match(document("htid" -> document("$in" -> ids))),
+            Group(BSONNull)("htids" -> PushField("htid")),
+            AddFields(document(
+              "_id" -> worksetId,
+              "created" -> Instant.now
+            )),
+            Merge(intoCollection = "worksets", on = List("_id"), None, None, None)
+          )
+        }
+        .headOption
       )
-      .map(_ => worksetId.stringify)
+      .flatMap(_ => getWorkset(worksetId.stringify))
   }
 
   override def deleteWorkset(id: WorksetId): Future[Unit] = {
@@ -760,22 +802,15 @@ class EfRepositoryMongoImpl @Inject()(val reactiveMongoApi: ReactiveMongoApi)
       .map(_ => ())
   }
 
-  override def getWorksetVolumes(id: WorksetId): Future[IdSet] = {
-    if (id == "all") {
-      Future.successful(Set.empty)
-    } else {
-      val query = document("_id" -> BSONObjectID.parse(id).get)
-      val projection = document("_id" -> 0, "htids" -> 1)
-
-      worksetsCol
-        .flatMap(_
-          .find(query, Some(projection))
-          .one[JsObject]
-          .map {
-            case Some(json) => (json \ "htids").as[IdSet]
-            case None => throw WorksetNotFoundException(id)
-          }
-        )
-    }
+  override def getWorkset(id: WorksetId): Future[Workset] = {
+    worksetsCol
+      .flatMap(_
+        .find(document("_id" -> BSONObjectID.parse(id).get))
+        .one[Workset]
+        .map {
+          case Some(workset) => workset
+          case None => throw WorksetNotFoundException(id)
+        }
+      )
   }
 }

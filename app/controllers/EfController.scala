@@ -1,10 +1,10 @@
 package controllers
 
 import io.swagger.annotations.ApiParam
-import play.api.libs.json._
 import play.api.mvc._
 import protocol.WrappedResponse
 import repo.EfRepository
+import repo.models.{VolumeId, WorksetId}
 import utils.Helper.tokenize
 import utils.IdUtils._
 
@@ -14,8 +14,6 @@ import scala.concurrent.ExecutionContext
 class EfController @Inject()(efRepository: EfRepository,
                              components: ControllerComponents)
                             (implicit val ec: ExecutionContext) extends AbstractController(components) {
-  import efRepository.{VolumeId, WorksetId}
-
   def getVolume(@ApiParam(value = "the 'clean' HTID of the volume", required = true) cleanId: VolumeId,
                 @ApiParam(value = "'true' whether to include part-of-speech information for tokens, " +
                   "'false' otherwise", required = false, defaultValue = "true") pos: Boolean,
@@ -25,6 +23,18 @@ class EfController @Inject()(efRepository: EfRepository,
         case Accepts.Json() =>
           val id = uncleanId(cleanId)
           efRepository.getVolume(id, pos, fields.map(tokenize(_)).getOrElse(List.empty)).map(WrappedResponse(_))
+      }
+    }
+
+  def checkVolume(@ApiParam(value = "the 'clean' HTID of the volume", required = true) cleanId: VolumeId): Action[AnyContent] =
+    Action.async { implicit req =>
+      render.async {
+        case Accepts.Json() =>
+          val id = uncleanId(cleanId)
+          efRepository.hasVolume(id).map {
+            case true => Ok
+            case _ => NotFound
+          }
       }
     }
 
@@ -57,7 +67,17 @@ class EfController @Inject()(efRepository: EfRepository,
       render.async {
         case Accepts.Json() =>
           val ids = tokenize(req.body, delims = " \n").toSet
-          efRepository.createWorkset(ids).map(wid => WrappedResponse(Json.obj("id" -> wid)))
+          efRepository.createWorkset(ids).map(WrappedResponse(_))
+      }
+    }
+
+  def getWorkset(@ApiParam(value = "the workset ID", required = true) wid: WorksetId): Action[AnyContent] =
+    Action.async { implicit req =>
+      render.async {
+        case Accepts.Json() =>
+          efRepository
+            .getWorkset(wid)
+            .map(WrappedResponse(_))
       }
     }
 
@@ -76,8 +96,8 @@ class EfController @Inject()(efRepository: EfRepository,
       render.async {
         case Accepts.Json() =>
           efRepository
-            .getWorksetVolumes(wid)
-            .flatMap(ids => efRepository.getVolumes(ids, pos, fields.map(tokenize(_)).getOrElse(List.empty)))
+            .getWorkset(wid)
+            .flatMap(workset => efRepository.getVolumes(workset.htids, pos, fields.map(tokenize(_)).getOrElse(List.empty)))
             .map(WrappedResponse(_))
       }
     }
@@ -88,8 +108,8 @@ class EfController @Inject()(efRepository: EfRepository,
       render.async {
         case Accepts.Json() =>
           efRepository
-            .getWorksetVolumes(wid)
-            .flatMap(efRepository.getVolumesMetadata(_, fields.map(tokenize(_)).getOrElse(List.empty)))
+            .getWorkset(wid)
+            .flatMap(workset => efRepository.getVolumesMetadata(workset.htids, fields.map(tokenize(_)).getOrElse(List.empty)))
             .map(WrappedResponse(_))
       }
     }

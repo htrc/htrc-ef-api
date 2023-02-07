@@ -11,9 +11,11 @@ GET   /assets/*file                 controllers.Assets.versioned(path = "/public
 #GET     /swagger.json                   controllers.Assets.at(path = "/public", file = "swagger.json")
 
 GET     /volumes/:cleanId               controllers.EfController.getVolume(cleanId, pos: Boolean ?= true, fields: Option[String] ?= None)
+HEAD    /volumes/:cleanId               controllers.EfController.checkVolume(cleanId)
 GET     /volumes/:cleanId/metadata      controllers.EfController.getVolumeMetadata(cleanId, fields: Option[String] ?= None)
 GET     /volumes/:cleanId/pages         controllers.EfController.getVolumePages(cleanId, seq: Option[String] ?= None, pos: Boolean ?= true, fields: Option[String] ?= None)
-POST    /worksets                       controllers.EfController.createWorkset
+POST    /worksets                       controllers.EfController.createWorkset()
+GET     /worksets/:id                   controllers.EfController.getWorkset(id)
 DELETE  /worksets/:id                   controllers.EfController.deleteWorkset(id)
 GET     /worksets/:id/volumes           controllers.EfController.getWorksetVolumes(id, pos: Boolean ?= true, fields: Option[String] ?= None)
 GET     /worksets/:id/metadata          controllers.EfController.getWorksetVolumesMetadata(id, fields: Option[String] ?= None)
