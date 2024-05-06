@@ -4,7 +4,7 @@ inThisBuild(Seq(
   organization := "org.hathitrust.htrc",
   organizationName := "HathiTrust Research Center",
   organizationHomepage := Some(url("https://www.hathitrust.org/htrc")),
-  scalaVersion := "2.13.12",
+  scalaVersion := "2.13.14",
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
@@ -38,7 +38,7 @@ lazy val ammoniteSettings = Seq(
       val version = scalaBinaryVersion.value match {
         case "2.10" => "1.0.3"
         case "2.11" => "1.6.7"
-        case _ ⇒  "2.5.11"
+        case _ ⇒  "3.0.0-M1-19-a7973e17"
       }
       "com.lihaoyi" % "ammonite" % version % Test cross CrossVersion.full
     },
