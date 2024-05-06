@@ -4,7 +4,7 @@ inThisBuild(Seq(
   organization := "org.hathitrust.htrc",
   organizationName := "HathiTrust Research Center",
   organizationHomepage := Some(url("https://www.hathitrust.org/htrc")),
-  scalaVersion := "2.13.10",
+  scalaVersion := "2.13.12",
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
@@ -38,7 +38,7 @@ lazy val ammoniteSettings = Seq(
       val version = scalaBinaryVersion.value match {
         case "2.10" => "1.0.3"
         case "2.11" => "1.6.7"
-        case _ ⇒  "2.5.6"
+        case _ ⇒  "2.5.11"
       }
       "com.lihaoyi" % "ammonite" % version % Test cross CrossVersion.full
     },
@@ -65,7 +65,7 @@ lazy val buildInfoSettings = Seq(
 
 lazy val dockerSettings = Seq(
   Docker / maintainer := "Boris Capitanu <capitanu@illinois.edu>",
-  dockerBaseImage := "eclipse-temurin:8-jre",
+  dockerBaseImage := "eclipse-temurin:11-jre",
   dockerExposedPorts := Seq(9000),
   dockerRepository := Some("docker.htrc.illinois.edu"),
   dockerUpdateLatest := true,
@@ -102,12 +102,12 @@ lazy val `ef-api` = (project in file("."))
     libraryDependencies ++= Seq(
       guice,
       filters,
-      "com.typesafe.play"             %% "play-streams"                     % "2.8.19",
-      "org.reactivemongo"             %% "play2-reactivemongo"              % "1.1.0-play28-RC7",
+      "com.typesafe.play"             %% "play-streams"                     % "2.9.2",
+      "org.reactivemongo"             %% "play2-reactivemongo"              % "1.1.0.play29-RC12",
       "org.reactivemongo"             %% "reactivemongo-akkastream"         % "1.0.10",
-      "io.swagger"                    %  "swagger-annotations"              % "1.6.9",
-      "org.webjars"                   %  "swagger-ui"                       % "4.15.5",
-      "org.scalatestplus.play"        %% "scalatestplus-play"               % "5.1.0"   % Test
+      "io.swagger"                    %  "swagger-annotations"              % "1.6.14",
+      "org.webjars"                   %  "swagger-ui"                       % "5.17.2",
+      "org.scalatestplus.play"        %% "scalatestplus-play"               % "7.0.1"   % Test
     ),
     routesGenerator := InjectedRoutesGenerator
   )
