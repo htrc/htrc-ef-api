@@ -102,7 +102,7 @@ lazy val `ef-api` = (project in file("."))
     libraryDependencies ++= Seq(
       guice,
       filters,
-      "com.typesafe.play"             %% "play-streams"                     % "2.9.2",
+      "com.typesafe.play"             %% "play-streams"                     % "2.9.3",
       "org.reactivemongo"             %% "play2-reactivemongo"              % "1.1.0.play29-RC12",
       "org.reactivemongo"             %% "reactivemongo-akkastream"         % "1.0.10",
       "io.swagger"                    %  "swagger-annotations"              % "1.6.14",
