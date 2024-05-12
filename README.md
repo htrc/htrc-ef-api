@@ -24,4 +24,4 @@ where `HOST` is the desired hostname or IP to bind to, and `PORT` is the desired
 
 # API
 
-WIP
+https://htrc.stoplight.io/docs/ef-api
