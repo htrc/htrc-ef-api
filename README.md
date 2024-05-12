@@ -1,4 +1,4 @@
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/htrc/HTRC-EF-API/ci.yml?branch=main)](https://github.com/htrc/HTRC-EF-API/actions/workflows/ci.yml)
+[![Scala CI](https://github.com/htrc/HTRC-EF-API/actions/workflows/ci.yml/badge.svg)](https://github.com/htrc/HTRC-EF-API/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/htrc/HTRC-EF-API/graph/badge.svg?token=SHgcExcM7o)](https://codecov.io/gh/htrc/HTRC-EF-API)
 [![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/htrc/HTRC-EF-API?include_prereleases&sort=semver)](https://github.com/htrc/HTRC-EF-API/releases/latest)
 
