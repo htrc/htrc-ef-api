@@ -65,7 +65,7 @@ lazy val buildInfoSettings = Seq(
 
 lazy val dockerSettings = Seq(
   Docker / maintainer := "Boris Capitanu <capitanu@illinois.edu>",
-  dockerBaseImage := "eclipse-temurin:11-jre",
+  dockerBaseImage := "eclipse-temurin:21-jre",
   dockerExposedPorts := Seq(9000),
   dockerRepository := Some("docker.htrc.illinois.edu"),
   dockerUpdateLatest := true,
