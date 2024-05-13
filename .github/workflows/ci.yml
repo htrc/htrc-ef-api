@@ -15,7 +15,7 @@ env:
   HTRC_NEXUS_DRHTRC_PWD: ${{ secrets.HTRC_NEXUS_DRHTRC_PWD }}
 
 jobs:
-  ci:
+  test:
     name: Build & test
     runs-on: ubuntu-latest
     steps:
