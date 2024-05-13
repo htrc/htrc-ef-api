@@ -88,7 +88,7 @@ jobs:
           client-payload: >-
             {
               "image": "${{ fromJSON(steps.meta.outputs.json).tags[0] }}",
-              "commit_msg": "[${{ github.head_ref || github.ref_name }}]: ${{ env.HEAD_COMMIT_MESSAGE }}",
+              "commit_msg": ${{ format('[{0}]: {1}', github.head_ref || github.ref_name, env.HEAD_COMMIT_MESSAGE) }},
               "repository": "${{ github.event.repository.name }}",
               "environment": "${{ github.event.inputs.environment }}",
               "ref": "${{ github.head_ref || github.ref_name }}"
