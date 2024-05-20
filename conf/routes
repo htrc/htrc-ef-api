@@ -11,7 +11,7 @@ GET   /assets/*file                 controllers.Assets.versioned(path = "/public
 #GET     /swagger.json                   controllers.Assets.at(path = "/public", file = "swagger.json")
 
 GET     /health/liveness                controllers.HealthController.livenessCheck
-GET     /health/readiness               controllers.HealthController.readynessCheck
+GET     /health/readiness               controllers.HealthController.readinessCheck
 
 GET     /volumes/:cleanId               controllers.EfController.getVolume(cleanId, pos: Boolean ?= true, fields: Option[String] ?= None)
 HEAD    /volumes/:cleanId               controllers.EfController.checkVolume(cleanId)
