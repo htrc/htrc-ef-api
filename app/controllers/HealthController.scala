@@ -16,7 +16,7 @@ class HealthController @Inject()(reactiveMongoApi: ReactiveMongoApi, components:
 
   def livenessCheck: Action[AnyContent] = Action { Ok }
 
-  def readynessCheck: Action[AnyContent] =
+  def readinessCheck: Action[AnyContent] =
     Action.async { _ =>
       reactiveMongoApi.database.flatMap(runPing).transform {
         case Success(true) => Success(Ok)
